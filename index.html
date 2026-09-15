@@ -22,8 +22,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- OCR Engine for Receipt Scanning -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-  <!-- Excel / CSV itinerary batch import -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -330,16 +328,7 @@
 
   <!-- ================= 1. 封面頁 (SPLASH SCREEN) ================= -->
   <div id="splash-screen" class="fixed inset-0 z-50 max-w-md mx-auto bg-cover bg-center flex flex-col justify-between p-6 text-white text-center shadow-2xl" style="background-image: url('./cover.jpg');">
-    <div class="w-full flex justify-end">
-      <button type="button" onclick="openTripManager()" class="px-3 py-2 rounded-full bg-black/45 text-white text-xs font-bold backdrop-blur-md btn-press shadow-lg">
-        <i class="fa-solid fa-suitcase-rolling mr-1"></i>我的旅程
-      </button>
-    </div>
     <div class="mt-auto pb-8 space-y-3 w-full">
-      <div id="splash-trip-info" class="bg-black/45 text-left rounded-3xl px-5 py-4 backdrop-blur-md shadow-lg">
-        <div id="splash-trip-title" class="text-xl font-bold tracking-wide">東京自由行 2026</div>
-        <div id="splash-trip-dates" class="text-[10px] opacity-85 mt-1">2026/10/25 ～ 2026/11/01</div>
-      </div>
       <div id="splash-countdown-box" class="w-full bg-white/90 text-torii text-xs font-bold py-2 px-4 rounded-full shadow-md backdrop-blur-md flex items-center justify-center">
         ⏳ 距離出發還有 <span id="splash-countdown" class="mx-1">--</span> 天
       </div>
@@ -353,13 +342,13 @@
   <header id="app-header" class="p-4 sticky top-0 z-30 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-sand">
     <div class="flex justify-between items-center">
       <div class="flex items-center gap-2">
-        <span id="trip-emoji" class="text-2xl">🍁</span>
-        <h1 id="trip-header-title" class="text-xl font-bold text-wood tracking-wide">東京手帳 2026</h1>
+        <span class="text-2xl">🍁</span>
+        <h1 class="text-xl font-bold text-wood tracking-wide">東京手帳 2026</h1>
       </div>
       <div class="flex items-center gap-2">
-        <a id="header-manual-icon" href="https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link" target="_blank" rel="noopener" class="header-icon-btn btn-press text-amber-500" title="旅遊手冊 PDF" aria-label="旅遊手冊 PDF"><i class="fa-solid fa-book-open"></i></a>
-        <button id="header-map-icon" type="button" onclick="openTripMapModal()" class="header-icon-btn btn-press text-skyBlue" title="旅遊景點地圖" aria-label="旅遊景點地圖"><i class="fa-solid fa-earth-asia"></i></button>
-        <button id="header-coupon-icon" type="button" onclick="openCouponModal()" class="header-icon-btn btn-press text-torii" title="購物優惠券" aria-label="購物優惠券"><i class="fa-solid fa-ticket"></i></button>
+        <a href="https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link" target="_blank" rel="noopener" class="header-icon-btn btn-press text-amber-500" title="旅遊手冊 PDF" aria-label="旅遊手冊 PDF"><i class="fa-solid fa-book-open"></i></a>
+        <button type="button" onclick="openTripMapModal()" class="header-icon-btn btn-press text-skyBlue" title="旅遊景點地圖" aria-label="旅遊景點地圖"><i class="fa-solid fa-earth-asia"></i></button>
+        <button type="button" onclick="openCouponModal()" class="header-icon-btn btn-press text-torii" title="購物優惠券" aria-label="購物優惠券"><i class="fa-solid fa-ticket"></i></button>
       </div>
     </div>
   </header>
@@ -483,18 +472,6 @@
 
     <!-- 2. 行程 (Schedule) -->
     <section id="page-schedule" class="page-content space-y-4">
-      <div id="schedule-weather-card" class="bg-card rounded-2xl p-4 shadow-soft border border-sand">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-bold text-wood text-sm truncate"><i class="fa-solid fa-location-dot text-torii mr-1"></i><span id="schedule-weather-city">東京</span></div>
-            <div id="schedule-weather-date" class="text-[10px] text-gray-400 mt-1">行程天氣</div>
-          </div>
-          <div class="text-right shrink-0">
-            <div id="schedule-weather-temp" class="text-lg font-bold text-wood">讀取中…</div>
-            <div id="schedule-weather-detail" class="text-[10px] text-gray-500">Open-Meteo</div>
-          </div>
-        </div>
-      </div>
       <div class="sticky-subnav sticky-datebar">
         <div class="flex gap-2 overflow-x-auto no-scrollbar py-1" id="date-picker"></div>
       </div>
@@ -723,34 +700,6 @@
       </div>
 
       <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-3">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-skyLight text-skyBlue flex items-center justify-center"><i class="fa-solid fa-suitcase-rolling"></i></div>
-          <div><h3 class="font-bold text-wood text-sm">目前旅程設定</h3><div class="text-[10px] text-gray-400">修改旅程名稱、日期、國家、主要城市與封面，不改變目前頁面版型。</div></div>
-        </div>
-        <button type="button" onclick="openTripSettings()" class="w-full py-2.5 rounded-xl bg-skyLight text-skyBlue font-bold text-xs btn-press"><i class="fa-solid fa-pen-to-square mr-2"></i>編輯旅程資料</button>
-      </div>
-
-      <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-3">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-card border border-sand text-wood flex items-center justify-center"><i class="fa-solid fa-icons"></i></div>
-          <div><h3 class="font-bold text-wood text-sm">右上角 ICON 設定</h3><div class="text-[10px] text-gray-400">編輯旅遊手冊、Google Maps、優惠券的顯示與內容。</div></div>
-        </div>
-        <button type="button" onclick="openHeaderIconSettings()" class="w-full py-2.5 rounded-xl bg-paper text-wood border border-sand font-bold text-xs btn-press"><i class="fa-solid fa-gear mr-2"></i>編輯右上角 ICON</button>
-      </div>
-
-      <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-3">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-skyLight text-skyBlue flex items-center justify-center"><i class="fa-solid fa-file-arrow-up"></i></div>
-          <div><h3 class="font-bold text-wood text-sm">批次匯入行程</h3><div class="text-[10px] text-gray-400">支援 Excel／CSV；上傳後先預覽再匯入。</div></div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="py-2.5 rounded-xl bg-skyBlue text-white font-bold text-xs btn-press text-center cursor-pointer"><i class="fa-solid fa-upload mr-1"></i>上傳行程<input id="batch-itinerary-input" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" onchange="readBatchItinerary(this)"></label>
-          <button type="button" onclick="downloadBatchSample()" class="py-2.5 rounded-xl bg-paper text-wood border border-sand font-bold text-xs btn-press"><i class="fa-solid fa-download mr-1"></i>下載空白 Sample</button>
-        </div>
-        <div class="text-[9px] text-gray-400">必要欄位：日期、時間、行程名稱。可選：地址、城市、簡介、備註、網址、預約網址。</div>
-      </div>
-
-      <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-3">
         <div class="flex items-center gap-2"><div class="w-9 h-9 rounded-xl bg-skyLight text-skyBlue flex items-center justify-center"><i class="fa-solid fa-floppy-disk"></i></div><div><h3 class="font-bold text-wood text-sm">整體資料備份</h3><div class="text-[10px] text-gray-400">備份行程、記帳、收據／自訂照片、必買推薦、日誌、準備資料與旅遊憑證。</div></div></div>
         <div class="grid grid-cols-2 gap-2"><button type="button" onclick="exportTokyoBackup()" class="py-2.5 rounded-xl bg-skyBlue text-white font-bold text-xs btn-press"><i class="fa-solid fa-download mr-1"></i>下載備份</button><label class="py-2.5 rounded-xl bg-sand text-wood font-bold text-xs btn-press text-center cursor-pointer"><i class="fa-solid fa-upload mr-1"></i>上傳還原<input id="tokyo-backup-input" type="file" accept="application/json,.json" class="hidden" onchange="importTokyoBackup(this)"></label></div>
         <div class="text-[9px] text-gray-400">備份檔可能包含個人行程、記帳與憑證，請妥善保存。</div>
@@ -805,21 +754,6 @@
     <div class="bg-card w-full max-w-md rounded-3xl p-4 shadow-2xl border border-sand">
       <div class="flex justify-between items-center border-b pb-2 mb-2"><div><h3 class="font-bold text-wood text-sm">備選景點</h3><div class="text-[9px] text-gray-400">已排入行程的景點會自動隱藏</div></div><button onclick="closeCandidateModal()" class="text-gray-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
       <div id="candidate-list" class="modal-scroll pr-1"></div>
-    </div>
-  </div>
-
-
-  <!-- V15 通用版：我的旅程 -->
-  <div id="trip-manager-modal" class="fixed inset-0 z-[120] bg-black/55 backdrop-blur-sm hidden flex items-end justify-center">
-    <div class="bg-card w-full max-w-md rounded-t-[32px] shadow-2xl border border-sand overflow-hidden" style="max-height:88dvh">
-      <div class="flex justify-between items-center px-5 py-4 border-b border-sand">
-        <h3 class="font-bold text-wood text-lg">我的旅程</h3>
-        <button type="button" onclick="closeTripManager()" class="w-10 h-10 rounded-full bg-card border border-sand text-gray-500"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="p-4 overflow-y-auto" style="max-height:calc(88dvh - 72px);-webkit-overflow-scrolling:touch">
-        <button type="button" onclick="openCreateTripModal()" class="w-full py-3.5 rounded-2xl bg-skyBlue text-white font-bold text-sm btn-press"><i class="fa-solid fa-plus mr-1"></i>建立新旅程</button>
-        <div id="trip-manager-list" class="space-y-3 mt-4"></div>
-      </div>
     </div>
   </div>
 
@@ -1006,97 +940,6 @@
     let activeTab = 'bookings';
     let currentExchangeRate = 0.22;
 
-    // ===== V15.1 通用旅程：保留原版 UI =====
-    const V15_CONFIG_KEY='tripbook-v15-config';
-    const TRIP_MANAGER_KEY='tripbook-v15-trip-manager';
-    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2',V15_CONFIG_KEY,'tripbook-v15-coupons'];
-    const defaultTripConfig={
-      title:'東京自由行 2026',headerTitle:'東京手帳 2026',emoji:'🍁',country:'日本',city:'東京',
-      startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',
-      showManual:true,manualUrl:'https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link',
-      showMap:true,mapUrl:'https://www.google.com/maps/d/viewer?mid=18IC04UGBo0p-LLcvXxef7GwkgqtFO1Y&usp=sharing',
-      showCoupons:true,autoImages:true
-    };
-    let tripConfig=(()=>{try{return {...defaultTripConfig,...JSON.parse(localStorage.getItem(V15_CONFIG_KEY)||'{}')}}catch(e){return {...defaultTripConfig}}})();
-
-    function loadTripManagerState(){
-      try{
-        const x=JSON.parse(localStorage.getItem(TRIP_MANAGER_KEY)||'null');
-        if(x?.trips?.length&&x.activeId)return x;
-      }catch(e){}
-      return {activeId:'trip-tokyo-2026',trips:[{id:'trip-tokyo-2026',title:'東京自由行 2026',city:'東京',country:'日本',startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',useTokyoSeed:true,snapshot:null}]};
-    }
-    let tripManagerState=loadTripManagerState();
-    function saveTripManagerState(){localStorage.setItem(TRIP_MANAGER_KEY,JSON.stringify(tripManagerState));}
-    function activeTripMeta(){return tripManagerState.trips.find(x=>x.id===tripManagerState.activeId)||tripManagerState.trips[0]}
-    function shouldUseTokyoSeed(){const t=activeTripMeta();return !t||t.useTokyoSeed!==false;}
-
-    function captureCurrentTripSnapshot(){
-      const o={};
-      TRIP_DATA_KEYS.forEach(k=>{const v=localStorage.getItem(k);if(v!==null)o[k]=v});
-      for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('note-'))o[k]=localStorage.getItem(k)}
-      return o;
-    }
-    function persistActiveTripSnapshot(){
-      const t=activeTripMeta();if(!t)return;
-      t.snapshot=captureCurrentTripSnapshot();
-      t.title=tripConfig.title||t.title;t.city=tripConfig.city||t.city;t.country=tripConfig.country||t.country;
-      t.startDate=tripConfig.startDate||t.startDate;t.endDate=tripConfig.endDate||t.endDate;t.cover=tripConfig.cover||t.cover;
-      saveTripManagerState();
-    }
-    function clearTripLocalData(){
-      TRIP_DATA_KEYS.forEach(k=>localStorage.removeItem(k));
-      Object.keys(localStorage).filter(k=>k.startsWith('note-')).forEach(k=>localStorage.removeItem(k));
-    }
-    function restoreTripSnapshot(t){
-      clearTripLocalData();
-      Object.entries(t?.snapshot||{}).forEach(([k,v])=>localStorage.setItem(k,v));
-    }
-    function tripDates(start,end){
-      const out=[];if(!start||!end)return out;
-      let d=new Date(start+'T12:00:00'),e=new Date(end+'T12:00:00'),i=1;
-      while(d<=e){out.push({day:`Day ${i++}`,date:`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`,w:['日','一','二','三','四','五','六'][d.getDay()],items:[]});d.setDate(d.getDate()+1)}
-      return out;
-    }
-    function blankShopData(){return {'藥品':[],'伴手禮':[],'美食':[],'超商':[],'其他':[],'購物清單':[]}}
-    function blankPlanData(){return {'必備':[{text:'有效護照',checked:false},{text:'信用卡與現金',checked:false},{text:'網路設備',checked:false}],'換洗衣物':[{text:'外衣外褲',checked:false},{text:'內衣襪子',checked:false}],'隨身用品':[{text:'雨具',checked:false},{text:'水瓶',checked:false}],'3C設備':[{text:'手機及充電器',checked:false},{text:'行動電源',checked:false}],'待辦事項':[{text:'確認護照效期',checked:false}],'其他':[]}}
-
-    function createBlankTripSnapshot(cfg){
-      return {
-        'tokyo-days-v2':JSON.stringify(tripDates(cfg.startDate,cfg.endDate)),
-        'tokyo-expenses-v2':'[]',
-        'tokyo-rate-v2':'0.22',
-        'tokyo-budget-v2':'80000',
-        'tokyo-shop-v2':JSON.stringify(blankShopData()),
-        'tokyo-journals-v2':'[]',
-        'tokyo-plan-v2':JSON.stringify(blankPlanData()),
-        [V15_CONFIG_KEY]:JSON.stringify(cfg),
-        'tripbook-v15-coupons':'[]'
-      };
-    }
-    function saveTripConfig(){
-      localStorage.setItem(V15_CONFIG_KEY,JSON.stringify(tripConfig));
-      const t=activeTripMeta();if(t){t.title=tripConfig.title;t.city=tripConfig.city;t.country=tripConfig.country;t.startDate=tripConfig.startDate;t.endDate=tripConfig.endDate;t.cover=tripConfig.cover;saveTripManagerState()}
-      applyTripConfigUI();
-    }
-    async function applyTripConfigUI(){
-      const ht=document.getElementById('trip-header-title');if(ht)ht.textContent=tripConfig.headerTitle||tripConfig.title||'旅行手帳';
-      const em=document.getElementById('trip-emoji');if(em)em.textContent=tripConfig.emoji||'✈️';
-      const st=document.getElementById('splash-trip-title');if(st)st.textContent=tripConfig.title||'旅行';
-      const sd=document.getElementById('splash-trip-dates');if(sd)sd.textContent=`${String(tripConfig.startDate||'').replaceAll('-','/')} ～ ${String(tripConfig.endDate||'').replaceAll('-','/')}${tripConfig.city?'・'+tripConfig.city:''}`;
-      const manual=document.getElementById('header-manual-icon');if(manual){manual.href=tripConfig.manualUrl||'#';manual.classList.toggle('hidden',!tripConfig.showManual||!tripConfig.manualUrl)}
-      const map=document.getElementById('header-map-icon');if(map)map.classList.toggle('hidden',!tripConfig.showMap);
-      const coupon=document.getElementById('header-coupon-icon');if(coupon)coupon.classList.toggle('hidden',!tripConfig.showCoupons);
-      const splash=document.getElementById('splash-screen');
-      if(splash){
-        let cover=tripConfig.cover||'./cover.jpg';
-        try{if(isMediaRef?.(cover))cover=await resolveMediaUrl(cover)||'./cover.jpg'}catch(e){}
-        splash.style.backgroundImage=`url("${cover}")`;
-      }
-      populateWeatherCities();
-      updateCountdown();
-    }
-
     function startApp() { document.getElementById('splash-screen').classList.add('hide'); }
     function toggleElement(id) { const el=document.getElementById(id); if(el) el.classList.toggle('hidden'); }
     function toggleExclusivePanel(id, selector) {
@@ -1107,13 +950,19 @@
     }
 
     function updateCountdown() {
-      const target = new Date((tripConfig.startDate||'2026-10-25')+'T00:00:00');
+      const target = new Date(2026, 9, 25); // 2026/10/25，本機日期
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const box = document.getElementById('splash-countdown-box');
       const splashEl = document.getElementById('splash-countdown');
-      if (today >= target) { if (box) box.classList.add('hidden'); return; }
-      const diffDays = Math.ceil((target - today) / 86400000);
+
+      // 從旅程當天起不再顯示倒數框
+      if (today >= target) {
+        if (box) box.classList.add('hidden');
+        return;
+      }
+
+      const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
       if (box) box.classList.remove('hidden');
       if (splashEl) splashEl.innerText = diffDays;
     }
@@ -1123,7 +972,6 @@
       activeTab = tabName;
       requestAnimationFrame(syncStickyHeaderHeight);
       if(tabName==='expense') setTimeout(()=>warmReceiptOCR(),120);
-      if(tabName==='schedule') setTimeout(()=>updateDailyScheduleWeather(false),80);
       document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
       document.getElementById(`page-${tabName}`).classList.add('active');
       
@@ -1159,10 +1007,9 @@
     function loadDaysData(){
       try{
         const saved=localStorage.getItem('tokyo-days-v2');
-        if(!saved)return shouldUseTokyoSeed()?JSON.parse(JSON.stringify(seedDaysData)):[];
+        if(!saved)return JSON.parse(JSON.stringify(seedDaysData));
         const current=JSON.parse(saved);
-        if(!Array.isArray(current))return shouldUseTokyoSeed()?JSON.parse(JSON.stringify(seedDaysData)):[];
-        if(!shouldUseTokyoSeed())return current;
+        if(!Array.isArray(current))return JSON.parse(JSON.stringify(seedDaysData));
         const dates=new Set(current.map(d=>d.date));
         seedDaysData.forEach(seed=>{
           if(!dates.has(seed.date))current.push(JSON.parse(JSON.stringify(seed)));
@@ -1237,7 +1084,7 @@
     }
 
     function renderTimeline(index=currentDayIndex){
-      currentDayIndex=index; renderDatePicker(); renderGroupPicker(); updateDailyScheduleWeather(false);
+      currentDayIndex=index; renderDatePicker(); renderGroupPicker();
       const container=document.getElementById('timeline-container');
       container.innerHTML='';
       const items=visibleItems(index).slice().sort((a,b)=>a.time.localeCompare(b.time));
@@ -1910,9 +1757,9 @@
     shopData['藥品']=shopData['藥品'].filter(x=>!removedShopNames.has(x.name));
     const shopRenameMap={'PABRON GOLD A':'大正百保能','PEBRON':'大正百保能','Una Kowa Cool':'護那酷止癢藥水','UNA KOWA COO':'護那酷止癢藥水','TOKYO TULIP ROSE':'鬱金香餅乾','Tokyo Tulip Rose':'鬱金香餅乾','YOKU MOKU Cigare':'Y雪茄餅乾','YOKU MOKU':'Y雪茄餅乾'};
     ['藥品','伴手禮'].forEach(cat=>shopData[cat].forEach(x=>{if(shopRenameMap[x.name])x.name=shopRenameMap[x.name];}));
-    // 舊版東京旅程才自動補入預設推薦；新旅程保持空白
+    // 舊版本使用者自動補入新版預設品項，不覆蓋原本資料
     ['藥品','伴手禮','美食','超商','其他'].forEach(cat=>{
-      if(shouldUseTokyoSeed())shopSeedData[cat].forEach(seed=>{if(!shopData[cat].some(x=>x.name===seed.name))shopData[cat].push({...seed});});
+      shopSeedData[cat].forEach(seed=>{if(!shopData[cat].some(x=>x.name===seed.name))shopData[cat].push({...seed});});
       shopData[cat].forEach(x=>{if(x.image===undefined)x.image='';if(x.location===undefined)x.location='';if(x.wiki===undefined)x.wiki='';});
     });
     (shopData['購物清單']||[]).forEach(x=>{if(!x.category)x.category='其他'});
@@ -2139,34 +1986,13 @@
     }
 
     const weatherLocations={
-      '東京':{lat:35.6762,lon:139.6503,timezone:'Asia/Tokyo'},
-      '河口湖':{lat:35.5010,lon:138.7550,timezone:'Asia/Tokyo'},
-      '千葉':{lat:35.6329,lon:139.8804,timezone:'Asia/Tokyo'}
+      '東京':{lat:35.6762,lon:139.6503},
+      '河口湖':{lat:35.5010,lon:138.7550},
+      '千葉':{lat:35.6329,lon:139.8804}
     };
     function weatherCodeText(code){
       const map={0:'晴朗',1:'大致晴朗',2:'局部多雲',3:'陰天',45:'有霧',48:'霧淞',51:'毛毛雨',53:'毛毛雨',55:'較強毛毛雨',61:'小雨',63:'中雨',65:'大雨',66:'凍雨',67:'強凍雨',71:'小雪',73:'中雪',75:'大雪',77:'霰',80:'陣雨',81:'較強陣雨',82:'強陣雨',85:'陣雪',86:'強陣雪',95:'雷雨',96:'雷雨伴冰雹',99:'強雷雨伴冰雹'};
       return map[code]||'天氣變化';
-    }
-    function itineraryCities(){
-      const s=new Set([tripConfig.city].filter(Boolean));
-      try{daysData.forEach(d=>d.items.forEach(x=>{if(x.city)s.add(x.city)}))}catch(e){}
-      return [...s];
-    }
-    function populateWeatherCities(){
-      const sel=document.getElementById('weather-city');if(!sel)return;
-      const old=sel.value,cities=itineraryCities();
-      sel.innerHTML=cities.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')||'<option value="東京">東京</option>';
-      if(cities.includes(old))sel.value=old;else sel.value=cities[0]||'東京';
-    }
-    async function geocodeWeatherCity(city){
-      if(weatherLocations[city])return weatherLocations[city];
-      const key='v15-weather-geo-'+city;
-      try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c?.lat)return c}catch(e){}
-      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=zh&format=json`;
-      const data=await fetch(url,{cache:'no-store'}).then(r=>r.json()),arr=data.results||[];
-      let x=arr[0];if(tripConfig.country)x=arr.find(v=>String(v.country||'').includes(tripConfig.country))||x;
-      if(!x)throw new Error('找不到城市');
-      const out={lat:x.latitude,lon:x.longitude,timezone:x.timezone||'auto'};weatherLocations[city]=out;localStorage.setItem(key,JSON.stringify(out));return out;
     }
     function renderWeather(city,data,fromCache=false){
       const cur=data.current||{}, hourly=data.hourly||{};
@@ -2176,52 +2002,23 @@
         if(idx<0&&hourly.time.length){const now=new Date(cur.time||Date.now()).getTime();idx=hourly.time.reduce((best,t,i)=>{const d=Math.abs(new Date(t).getTime()-now);return d<best.d?{i,d}:best},{i:0,d:Infinity}).i}
         if(idx>=0)rain=hourly.precipitation_probability[idx]??'--';
       }
-      const temp=document.getElementById('weather-temp'),cond=document.getElementById('weather-condition'),detail=document.getElementById('weather-detail'),upd=document.getElementById('weather-updated');
-      if(temp)temp.innerText=Number.isFinite(cur.temperature_2m)?`${Math.round(cur.temperature_2m)}°C`:'--°C';
-      if(cond)cond.innerText=weatherCodeText(cur.weather_code);
-      if(detail)detail.innerText=`體感 ${Number.isFinite(cur.apparent_temperature)?Math.round(cur.apparent_temperature)+'°C':'--'}｜降雨機率 ${rain}%｜風速 ${Number.isFinite(cur.wind_speed_10m)?Math.round(cur.wind_speed_10m)+' km/h':'--'}`;
+      document.getElementById('weather-temp').innerText=Number.isFinite(cur.temperature_2m)?`${Math.round(cur.temperature_2m)}°C`:'--°C';
+      document.getElementById('weather-condition').innerText=weatherCodeText(cur.weather_code);
+      document.getElementById('weather-detail').innerText=`體感 ${Number.isFinite(cur.apparent_temperature)?Math.round(cur.apparent_temperature)+'°C':'--'}｜降雨機率 ${rain}%｜風速 ${Number.isFinite(cur.wind_speed_10m)?Math.round(cur.wind_speed_10m)+' km/h':'--'}`;
       const stamp=new Date(data._savedAt||Date.now());
-      if(upd)upd.innerText=`${fromCache?'離線顯示上次資料｜':''}更新 ${stamp.toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜Open-Meteo`;
+      document.getElementById('weather-updated').innerText=`${fromCache?'離線顯示上次資料｜':''}更新 ${stamp.toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜Open-Meteo`;
     }
     async function updateWeatherDisplay(force=false){
-      const city=document.getElementById('weather-city')?.value||tripConfig.city||'東京',key='v15-weather-current-'+city,cached=localStorage.getItem(key);
+      const city=document.getElementById('weather-city')?.value||'東京', loc=weatherLocations[city], key='tokyo-weather-'+city, cached=localStorage.getItem(key);
       if(cached&&!force){try{renderWeather(city,JSON.parse(cached),true)}catch(e){}}
-      const detail=document.getElementById('weather-detail');if(detail)detail.innerText='正在取得即時天氣資料…';
+      document.getElementById('weather-detail').innerText='正在取得即時天氣資料…';
       try{
-        const loc=await geocodeWeatherCity(city);
-        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&forecast_days=1&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&forecast_days=1&timezone=Asia%2FTokyo`;
         const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('weather');
         const data=await res.json();data._savedAt=Date.now();localStorage.setItem(key,JSON.stringify(data));renderWeather(city,data,false);
-      }catch(e){if(cached){try{renderWeather(city,JSON.parse(cached),true)}catch(_){}}}
-    }
-    function scheduleDayIso(day){
-      const year=(tripConfig.startDate||String(new Date().getFullYear())).slice(0,4),md=String(day?.date||'').split('/');
-      return md.length===2?`${year}-${md[0].padStart(2,'0')}-${md[1].padStart(2,'0')}`:'';
-    }
-    function currentScheduleCity(){
-      const day=daysData?.[currentDayIndex],counts={};
-      (day?.items||[]).forEach(x=>{const c=x.city||'';if(c)counts[c]=(counts[c]||0)+1});
-      return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||tripConfig.city||'東京';
-    }
-    async function updateDailyScheduleWeather(force=false){
-      const box=document.getElementById('schedule-weather-card');if(!box)return;
-      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=`v15-daily-weather-${city}-${iso}`,cached=localStorage.getItem(key);
-      document.getElementById('schedule-weather-city').textContent=city;
-      document.getElementById('schedule-weather-date').textContent=`${iso?iso.replaceAll('-','/'):''} 行程天氣`;
-      if(cached&&!force){
-        try{const c=JSON.parse(cached);document.getElementById('schedule-weather-temp').textContent=c.temp;document.getElementById('schedule-weather-detail').textContent=c.detail}catch(e){}
-      }
-      try{
-        const loc=await geocodeWeatherCity(city);
-        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=16&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
-        const d=await fetch(url,{cache:'no-store'}).then(r=>r.json()),idx=(d.daily?.time||[]).indexOf(iso);
-        let temp,detail;
-        if(idx>=0){temp=`${Math.round(d.daily.temperature_2m_min[idx])}–${Math.round(d.daily.temperature_2m_max[idx])}°C`;detail=`${weatherCodeText(d.daily.weather_code[idx])}・降雨 ${d.daily.precipitation_probability_max[idx]??'--'}%`}
-        else{temp=`${Math.round(d.current?.temperature_2m??0)}°C`;detail=`${weatherCodeText(d.current?.weather_code)}・尚未進入行程日期預報範圍`}
-        document.getElementById('schedule-weather-temp').textContent=temp;document.getElementById('schedule-weather-detail').textContent=detail;
-        localStorage.setItem(key,JSON.stringify({temp,detail,at:Date.now()}));
       }catch(e){
-        if(!cached){document.getElementById('schedule-weather-temp').textContent='--°C';document.getElementById('schedule-weather-detail').textContent='離線／暫無天氣資料'}
+        if(cached){try{renderWeather(city,JSON.parse(cached),true)}catch(_){}}
+        else{document.getElementById('weather-temp').innerText='--°C';document.getElementById('weather-condition').innerText='離線';document.getElementById('weather-detail').innerText='目前無網路，尚無上次天氣資料';document.getElementById('weather-updated').innerText='連線後會自動更新｜Open-Meteo'}
       }
     }
 
@@ -2234,7 +2031,7 @@
 
     function openBookingPdfDB(){
       return new Promise((resolve,reject)=>{
-        const req=indexedDB.open(BOOKING_PDF_DB,2);
+        const req=indexedDB.open(BOOKING_PDF_DB,1);
         req.onupgradeneeded=()=> {
           const db=req.result;
           if(!db.objectStoreNames.contains(BOOKING_PDF_STORE)){
@@ -2256,7 +2053,6 @@
           type:file.type||(file.name.toLowerCase().endsWith('.pdf')?'application/pdf':'image/*'),
           size:file.size,
           createdAt:Date.now(),
-          tripId:tripManagerState?.activeId||'trip-tokyo-2026',
           blob:file
         });
         tx.oncomplete=()=>resolve();
@@ -2269,7 +2065,7 @@
       return new Promise((resolve,reject)=>{
         const tx=db.transaction(BOOKING_PDF_STORE,'readonly');
         const req=tx.objectStore(BOOKING_PDF_STORE).getAll();
-        req.onsuccess=()=>{const aid=tripManagerState?.activeId||'trip-tokyo-2026';const original=tripManagerState?.trips?.[0]?.id||'trip-tokyo-2026';resolve((req.result||[]).filter(x=>x.tripId===aid||(!x.tripId&&aid===original)).sort((a,b)=>b.createdAt-a.createdAt));};
+        req.onsuccess=()=>resolve((req.result||[]).sort((a,b)=>b.createdAt-a.createdAt));
         req.onerror=()=>reject(req.error);
       });
     }
@@ -2350,9 +2146,9 @@
       renderBookingPdfs();
     }
 
-    document.addEventListener('DOMContentLoaded',()=>{initBookingPdfUpload();applyTripConfigUI();populateWeatherCities();updateWeatherDisplay(false);setTimeout(()=>{migrateLegacyMediaToIndexedDB();updateDailyScheduleWeather(false);},400);});
+    document.addEventListener('DOMContentLoaded',()=>{initBookingPdfUpload();updateWeatherDisplay(false);setTimeout(()=>migrateLegacyMediaToIndexedDB(),400);});
 
-    const defaultCoupons = [
+    const coupons = [
       {name:"松本清",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_01.webp"},
       {name:"多慶屋",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_02.webp"},
       {name:"山田電機",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_03.webp"},
@@ -2369,21 +2165,27 @@
       {name:'唐吉訶德',note:'開啟唐吉訶德優惠券',url:'https://reurl.cc/jV6Z5m'},
       {name:'其他',note:'開啟其他優惠券',url:'https://reurl.cc/gNnbG7'}
     ];
-    let coupons=(()=>{try{const s=localStorage.getItem('tripbook-v15-coupons');if(s)return JSON.parse(s);return shouldUseTokyoSeed()?JSON.parse(JSON.stringify(defaultCoupons)):[]}catch(e){return shouldUseTokyoSeed()?JSON.parse(JSON.stringify(defaultCoupons)):[]}})();
-    function saveCoupons(){localStorage.setItem('tripbook-v15-coupons',JSON.stringify(coupons));applyTripConfigUI()}
 
     function openCouponModal(){
       const box=document.getElementById('coupon-list');
       box.innerHTML=coupons.map(c=>c.image
-        ? `<button type="button" onclick="openCouponImage('${c.image}','${String(c.name).replace(/'/g,"\'")}')" class="coupon-card w-full p-3 rounded-2xl border border-sand bg-paper flex items-center justify-between gap-3 text-left btn-press"><div class="flex items-center gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-sakuraLight text-torii flex items-center justify-center shrink-0"><i class="fa-solid fa-ticket"></i></div><div class="min-w-0"><div class="font-bold text-xs text-wood truncate">${c.name}</div><div class="text-[9px] text-gray-400 mt-1">點擊查看優惠券圖片</div></div></div><i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i></button>`
-        : `<div class="p-3 rounded-2xl border border-sand bg-paper flex items-center justify-between gap-2"><div><div class="font-bold text-xs">${c.name}</div><div class="text-[9px] text-gray-400 mt-1">${c.note||''}</div></div><a href="${c.url}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press">開啟</a></div>`).join('')||'<div class="text-center text-xs text-gray-400 py-6">尚無優惠券</div>';
+        ? `<button type="button" onclick="openCouponImage('${c.image}','${String(c.name).replace(/'/g,"\\'")}')" class="coupon-card w-full p-3 rounded-2xl border border-sand bg-paper flex items-center justify-between gap-3 text-left btn-press">
+             <div class="flex items-center gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-sakuraLight text-torii flex items-center justify-center shrink-0"><i class="fa-solid fa-ticket"></i></div><div class="min-w-0"><div class="font-bold text-xs text-wood truncate">${c.name}</div><div class="text-[9px] text-gray-400 mt-1">點擊查看優惠券圖片</div></div></div>
+             <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+           </button>`
+        : `<div class="p-3 rounded-2xl border border-sand bg-paper flex items-center justify-between gap-2"><div><div class="font-bold text-xs">${c.name}</div><div class="text-[9px] text-gray-400 mt-1">${c.note}</div></div><a href="${c.url}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press">開啟</a></div>`).join('');
       document.getElementById('coupon-modal').classList.remove('hidden');
     }
     function openCouponImage(src,name){
       document.getElementById('coupon-image-viewer')?.remove();
-      const modal=document.createElement('div');modal.id='coupon-image-viewer';modal.className='fixed inset-0 z-[130] bg-black/90 overflow-y-auto overscroll-contain p-3 pt-20 pb-8';modal.style.webkitOverflowScrolling='touch';
-      modal.innerHTML=`<div class="fixed top-3 left-3 right-3 z-[131] flex items-center justify-between text-white"><div class="font-bold text-sm truncate pr-3 bg-black/40 rounded-xl px-3 py-2">${name||'優惠券'}</div><button type="button" id="coupon-viewer-close" class="w-10 h-10 shrink-0 rounded-full bg-black/60 text-white text-xl flex items-center justify-center shadow-lg"><i class="fa-solid fa-xmark"></i></button></div><div class="min-h-full flex items-start justify-center"><img src="${src}" class="w-auto max-w-full h-auto object-contain rounded-xl bg-white shadow-2xl"></div>`;
-      modal.querySelector('#coupon-viewer-close').onclick=()=>modal.remove();modal.onclick=e=>{if(e.target===modal)modal.remove()};document.body.appendChild(modal);
+      const modal=document.createElement('div');
+      modal.id='coupon-image-viewer';
+      modal.className='fixed inset-0 z-[100] bg-black/90 overflow-y-auto overscroll-contain p-3 pt-20 pb-8';
+      modal.style.webkitOverflowScrolling='touch';
+      modal.innerHTML=`<div class="fixed top-3 left-3 right-3 z-[101] flex items-center justify-between text-white"><div class="font-bold text-sm truncate pr-3 bg-black/40 rounded-xl px-3 py-2">${name||'優惠券'}</div><button type="button" id="coupon-viewer-close" class="w-10 h-10 shrink-0 rounded-full bg-black/60 text-white text-xl flex items-center justify-center shadow-lg" aria-label="關閉"><i class="fa-solid fa-xmark"></i></button></div><div class="min-h-full flex items-start justify-center"><img src="${src}" class="w-auto max-w-full h-auto object-contain rounded-xl bg-white shadow-2xl" alt="${name||'優惠券'}"></div>`;
+      modal.querySelector('#coupon-viewer-close').onclick=()=>modal.remove();
+      modal.onclick=e=>{if(e.target===modal)modal.remove()};
+      document.body.appendChild(modal);
     }
     function closeCouponModal(){document.getElementById('coupon-modal').classList.add('hidden');}
 
@@ -2397,7 +2199,7 @@
     function openTripMapModal(){
       const box=document.getElementById('trip-map-list');
       const allPts=daysData.flatMap(d=>d.items).filter(x=>x.address && !/Airport|機場/i.test(x.address));
-      const allButton=tripConfig.mapUrl?`<div class="p-3 rounded-2xl bg-skyLight border border-skyBlue/20"><a href="${tripConfig.mapUrl}" target="_blank" class="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-skyBlue text-white text-xs font-bold"><i class="fa-solid fa-map"></i>開啟自訂 Google Maps</a></div>`:'';
+      const allButton=allPts.length?`<div class="p-3 rounded-2xl bg-skyLight border border-skyBlue/20"><a href="https://www.google.com/maps/d/viewer?mid=18IC04UGBo0p-LLcvXxef7GwkgqtFO1Y&usp=sharing" target="_blank" class="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-skyBlue text-white text-xs font-bold"><i class="fa-solid fa-map"></i>全部景點 Google Maps</a><div class="text-[9px] text-gray-500 mt-2 text-center">開啟專屬「東京旅遊地圖」，查看所有已標註景點。</div></div>`:'';
       box.innerHTML=allButton+daysData.map(d=>{
         const pts=d.items.filter(x=>x.address && !/Airport|機場/i.test(x.address));
         if(!pts.length)return '';
@@ -2815,124 +2617,14 @@
       }finally{input.value=''}
     }
 
-
-    // ---------------- V15.1 我的旅程 / 通用設定 / 批次匯入 ----------------
-    function openTripManager(){persistActiveTripSnapshot();renderTripManagerList();document.getElementById('trip-manager-modal').classList.remove('hidden')}
-    function closeTripManager(){document.getElementById('trip-manager-modal').classList.add('hidden')}
-    function renderTripManagerList(){
-      const box=document.getElementById('trip-manager-list');if(!box)return;box.innerHTML='';
-      tripManagerState.trips.forEach(t=>{
-        const active=t.id===tripManagerState.activeId,d=document.createElement('div');
-        d.className=`rounded-2xl border p-4 ${active?'border-skyBlue bg-skyLight':'border-sand bg-card'}`;
-        d.innerHTML=`<button type="button" onclick="switchManagedTrip('${t.id}')" class="w-full text-left"><div class="flex justify-between gap-2"><div class="min-w-0"><div class="font-bold text-wood text-sm truncate">${escapeHtml(t.title||'我的旅行')}</div><div class="text-[10px] text-gray-400 mt-1">${String(t.startDate||'').replaceAll('-','/')}–${String(t.endDate||'').replaceAll('-','/')}${t.city?'・'+escapeHtml(t.city):''}</div></div>${active?'<span class="text-[10px] text-skyBlue font-bold shrink-0">目前</span>':''}</div></button><div class="flex justify-end gap-3 mt-3"><button type="button" onclick="editManagedTrip('${t.id}')" class="text-xs text-skyBlue font-bold">編輯</button>${tripManagerState.trips.length>1?`<button type="button" onclick="deleteManagedTrip('${t.id}')" class="text-xs text-red-400 font-bold">刪除</button>`:''}</div>`;
-        box.appendChild(d)
-      })
-    }
-    function openCreateTripModal(){
-      closeTripManager();
-      document.getElementById('modal-title').innerText='建立新旅程';
-      document.getElementById('modal-form-body').innerHTML=`
-        <input id="new-trip-title" placeholder="旅程名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div class="grid grid-cols-2 gap-2"><input id="new-trip-country" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="new-trip-city" placeholder="主要城市 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
-        <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="new-trip-start" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="new-trip-end" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
-        <label class="block p-3 bg-paper border border-dashed border-sand rounded-xl text-center cursor-pointer"><i class="fa-solid fa-image text-amber-500 mr-1"></i>封面照片（選填）<input id="new-trip-cover" type="file" accept="image/*" class="hidden"></label>
-        <button type="button" onclick="createManagedTrip()" class="w-full py-3 rounded-xl bg-skyBlue text-white font-bold">建立旅程</button>`;
-      document.getElementById('global-modal').classList.remove('hidden');
-    }
-    async function createManagedTrip(){
-      const title=document.getElementById('new-trip-title').value.trim(),country=document.getElementById('new-trip-country').value.trim(),city=document.getElementById('new-trip-city').value.trim(),start=document.getElementById('new-trip-start').value,end=document.getElementById('new-trip-end').value;
-      if(!title||!city||!start||!end)return alert('請填寫旅程名稱、主要城市與日期');
-      if(end<start)return alert('回程日期不可早於出發日期');
-      persistActiveTripSnapshot();
-      const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true};
-      const f=document.getElementById('new-trip-cover')?.files?.[0];if(f){try{cfg.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover')}catch(e){}}
-      const t={id,title,city,country,startDate:start,endDate:end,cover:cfg.cover,useTokyoSeed:false,snapshot:createBlankTripSnapshot(cfg)};
-      tripManagerState.trips.push(t);tripManagerState.activeId=id;saveTripManagerState();restoreTripSnapshot(t);location.reload();
-    }
-    function switchManagedTrip(id){
-      if(id===tripManagerState.activeId){closeTripManager();return}
-      persistActiveTripSnapshot();const t=tripManagerState.trips.find(x=>x.id===id);if(!t)return;tripManagerState.activeId=id;saveTripManagerState();restoreTripSnapshot(t);location.reload();
-    }
-    function editManagedTrip(id){
-      const t=tripManagerState.trips.find(x=>x.id===id);if(!t)return;
-      if(id!==tripManagerState.activeId){switchManagedTrip(id);return}
-      closeTripManager();openTripSettings();
-    }
-    function deleteManagedTrip(id){
-      if(tripManagerState.trips.length<=1)return;
-      const t=tripManagerState.trips.find(x=>x.id===id);if(!t||!confirm(`確定刪除「${t.title}」？本裝置上的該旅程資料將移除。`))return;
-      const wasActive=id===tripManagerState.activeId;tripManagerState.trips=tripManagerState.trips.filter(x=>x.id!==id);
-      if(wasActive){const n=tripManagerState.trips[0];tripManagerState.activeId=n.id;saveTripManagerState();restoreTripSnapshot(n);location.reload()}else{saveTripManagerState();renderTripManagerList()}
-    }
-
-    function openTripSettings(){
-      document.getElementById('modal-title').innerText='目前旅程設定';
-      document.getElementById('modal-form-body').innerHTML=`
-        <input id="v15-trip-title" value="${escapeHtml(tripConfig.title||'')}" placeholder="旅程名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div class="grid grid-cols-2 gap-2"><input id="v15-trip-country" value="${escapeHtml(tripConfig.country||'')}" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="v15-trip-city" value="${escapeHtml(tripConfig.city||'')}" placeholder="主要城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
-        <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="v15-trip-start" type="date" value="${tripConfig.startDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="v15-trip-end" type="date" value="${tripConfig.endDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
-        <label class="block p-3 bg-paper border border-dashed border-sand rounded-xl text-center cursor-pointer">更換封面（選填）<input id="v15-trip-cover" type="file" accept="image/*" class="hidden"></label>
-        <label class="flex items-center gap-2 text-xs"><input id="v15-auto-images" type="checkbox" ${tripConfig.autoImages!==false?'checked':''}> 自動取得景點圖片（Wikipedia / Wikimedia）</label>
-        <button type="button" onclick="saveTripSettings()" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl">儲存旅程設定</button>`;
-      document.getElementById('global-modal').classList.remove('hidden');
-    }
-    async function saveTripSettings(){
-      const start=document.getElementById('v15-trip-start').value,end=document.getElementById('v15-trip-end').value;if(start&&end&&end<start)return alert('回程日期不可早於出發日期');
-      tripConfig.title=document.getElementById('v15-trip-title').value.trim()||'旅行手帳';tripConfig.headerTitle=tripConfig.title;tripConfig.country=document.getElementById('v15-trip-country').value.trim();tripConfig.city=document.getElementById('v15-trip-city').value.trim();tripConfig.startDate=start||tripConfig.startDate;tripConfig.endDate=end||tripConfig.endDate;tripConfig.autoImages=document.getElementById('v15-auto-images').checked;
-      const f=document.getElementById('v15-trip-cover')?.files?.[0];if(f){try{tripConfig.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover',isMediaRef(tripConfig.cover)?tripConfig.cover:'')}catch(e){return alert('封面處理失敗')}}
-      saveTripConfig();persistActiveTripSnapshot();closeGlobalModal();populateWeatherCities();updateWeatherDisplay(true);updateDailyScheduleWeather(true);
-    }
-
-    function openHeaderIconSettings(){
-      document.getElementById('modal-title').innerText='右上角 ICON 設定';
-      document.getElementById('modal-form-body').innerHTML=`
-        <div class="p-3 rounded-xl bg-paper border border-sand space-y-2"><label class="flex items-center gap-2 font-bold text-xs"><input id="icon-show-manual" type="checkbox" ${tripConfig.showManual?'checked':''}><i class="fa-solid fa-book-open text-amber-500"></i> 顯示「旅遊手冊」</label><input id="icon-manual-url" value="${escapeHtml(tripConfig.manualUrl||'')}" placeholder="PDF / Google Drive / 網址" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div>
-        <div class="p-3 rounded-xl bg-paper border border-sand space-y-2"><label class="flex items-center gap-2 font-bold text-xs"><input id="icon-show-map" type="checkbox" ${tripConfig.showMap?'checked':''}><i class="fa-solid fa-earth-asia text-skyBlue"></i> 顯示「Google Maps」</label><input id="icon-map-url" value="${escapeHtml(tripConfig.mapUrl||'')}" placeholder="自訂 Google My Maps 網址（可留空）" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div>
-        <div class="p-3 rounded-xl bg-paper border border-sand space-y-2"><label class="flex items-center gap-2 font-bold text-xs"><input id="icon-show-coupon" type="checkbox" ${tripConfig.showCoupons?'checked':''}><i class="fa-solid fa-ticket text-torii"></i> 顯示「優惠券」</label><button type="button" onclick="saveHeaderIconSettings(false);openCouponManager()" class="w-full py-2 rounded-xl bg-card border border-sand text-xs font-bold">管理優惠券</button></div>
-        <button type="button" onclick="saveHeaderIconSettings(true)" class="w-full py-2.5 rounded-xl bg-skyBlue text-white font-bold">儲存 ICON 設定</button>`;
-      document.getElementById('global-modal').classList.remove('hidden');
-    }
-    function saveHeaderIconSettings(close=true){
-      tripConfig.showManual=!!document.getElementById('icon-show-manual')?.checked;tripConfig.showMap=!!document.getElementById('icon-show-map')?.checked;tripConfig.showCoupons=!!document.getElementById('icon-show-coupon')?.checked;
-      const u=document.getElementById('icon-manual-url'),m=document.getElementById('icon-map-url');if(u)tripConfig.manualUrl=u.value.trim();if(m)tripConfig.mapUrl=m.value.trim();saveTripConfig();persistActiveTripSnapshot();if(close)closeGlobalModal();
-    }
-    function openCouponManager(){
-      document.getElementById('modal-title').innerText='管理優惠券';
-      document.getElementById('modal-form-body').innerHTML=`<div class="space-y-2">${coupons.map((c,i)=>`<div class="p-2.5 rounded-xl bg-paper border border-sand flex justify-between items-center gap-2"><div class="min-w-0"><div class="font-bold text-xs truncate">${escapeHtml(c.name)}</div><div class="text-[9px] text-gray-400">${c.url?'網址':'圖片'}</div></div><button onclick="deleteCouponItem(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button></div>`).join('')||'<div class="text-xs text-gray-400 text-center">尚無優惠券</div>'}</div><hr class="border-sand"><input id="coupon-new-name" placeholder="優惠券名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><select id="coupon-new-type" onchange="document.getElementById('coupon-url-row').classList.toggle('hidden',this.value!=='url');document.getElementById('coupon-img-row').classList.toggle('hidden',this.value!=='image')" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><option value="url">網址</option><option value="image">圖片</option></select><input id="coupon-url-row" placeholder="優惠券網址" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><label id="coupon-img-row" class="hidden block p-2.5 text-center bg-paper border border-dashed border-sand rounded-xl">上傳圖片<input id="coupon-new-img" type="file" accept="image/*" class="hidden"></label><button onclick="addCouponItem()" class="w-full py-2.5 bg-skyBlue text-white rounded-xl font-bold">新增優惠券</button>`;
-      document.getElementById('global-modal').classList.remove('hidden');
-    }
-    async function addCouponItem(){const name=document.getElementById('coupon-new-name').value.trim(),type=document.getElementById('coupon-new-type').value;if(!name)return alert('請輸入名稱');const item={name,note:''};if(type==='url'){item.url=document.getElementById('coupon-url-row').value.trim();if(!item.url)return alert('請輸入網址')}else{const f=document.getElementById('coupon-new-img').files[0];if(!f)return alert('請選圖片');item.image=await putMediaDataURL(await compressReceipt(f,1000,.78),'coupon')}coupons.push(item);saveCoupons();persistActiveTripSnapshot();openCouponManager()}
-    function deleteCouponItem(i){if(confirm('確定刪除此優惠券？')){coupons.splice(i,1);saveCoupons();persistActiveTripSnapshot();openCouponManager()}}
-
-    let batchImportRows=[];
-    const batchAliases={date:['日期','date','day'],time:['時間','time'],title:['行程名稱','景點名稱','景點','行程','title','location','destination','place'],address:['地址','address','google maps','map'],city:['城市','city'],intro:['簡介','介紹','description','intro'],note:['備註','note','notes'],website:['網址','網站','website','url'],reservationUrl:['預約網址','reservation','booking url']};
-    function batchKey(k){const s=String(k||'').trim().toLowerCase();for(const [key,a] of Object.entries(batchAliases))if(a.some(x=>x.toLowerCase()===s))return key;return s}
-    function batchDate(v){if(v instanceof Date)return v.toISOString().slice(0,10);let s=String(v||'').trim().replace(/\./g,'/').replace(/-/g,'/'),m=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;m=s.match(/^(\d{1,2})\/(\d{1,2})$/);if(m){const y=(tripConfig.startDate||new Date().getFullYear().toString()).slice(0,4);return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`}return ''}
-    function normalizeBatchRows(rows){return rows.map(r=>{const n={};Object.entries(r).forEach(([k,v])=>n[batchKey(k)]=v);let tm=String(n.time||'').trim();if(/^\d{1,2}:\d{2}/.test(tm))tm=tm.match(/^\d{1,2}:\d{2}/)[0].padStart(5,'0');return{date:batchDate(n.date),time:tm,title:String(n.title||'').trim(),address:String(n.address||'').trim(),city:String(n.city||tripConfig.city||'').trim(),intro:String(n.intro||'').trim(),note:String(n.note||'').trim(),website:String(n.website||'').trim(),reservationUrl:String(n.reservationUrl||'').trim()}}).filter(x=>x.date||x.time||x.title)}
-    async function readBatchItinerary(input){const file=input.files?.[0];if(!file)return;try{let rows=[];if(/\.csv$/i.test(file.name)){rows=normalizeBatchRows(parseBatchDelimited(await file.text()))}else{if(!window.XLSX)throw new Error('Excel 解析器尚未載入，請先連網開啟 APP 一次');const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});rows=normalizeBatchRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false}))}batchImportRows=rows;showBatchPreview()}catch(e){console.error(e);alert('無法解析行程檔：'+e.message)}finally{input.value=''}}
-    function parseBatchDelimited(text){const lines=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/);if(!lines.length)return[];const delim=lines[0].includes('\t')?'\t':',';const parse=line=>{const a=[];let cur='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}else if(ch===delim&&!q){a.push(cur);cur=''}else cur+=ch}a.push(cur);return a};const h=parse(lines[0]);return lines.slice(1).filter(Boolean).map(l=>{const v=parse(l);return Object.fromEntries(h.map((x,i)=>[x,v[i]||'']))})}
-    function showBatchPreview(){const good=batchImportRows.filter(x=>x.date&&x.time&&x.title),bad=batchImportRows.length-good.length,groups={};good.forEach(r=>(groups[r.date]||(groups[r.date]=[])).push(r));document.getElementById('modal-title').innerText='批次匯入預覽';document.getElementById('modal-form-body').innerHTML=`<div class="p-3 rounded-xl bg-skyLight text-xs"><b>可匯入 ${good.length} 筆</b>${bad?`；${bad} 筆缺少日期／時間／行程名稱`:''}</div><div class="max-h-64 overflow-y-auto space-y-2">${Object.entries(groups).map(([d,a])=>`<div class="p-2.5 bg-paper rounded-xl border border-sand"><div class="font-bold text-xs">${d}</div>${a.map(r=>`<div class="text-[10px] mt-1">${escapeHtml(r.time)}　${escapeHtml(r.title)}${r.city?` <span class="text-gray-400">${escapeHtml(r.city)}</span>`:''}</div>`).join('')}</div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><button onclick="confirmBatchImport('append')" class="py-2.5 bg-paper border border-sand rounded-xl font-bold text-xs">加入目前行程</button><button onclick="confirmBatchImport('replace')" class="py-2.5 bg-skyBlue text-white rounded-xl font-bold text-xs">取代目前行程</button></div>`;document.getElementById('global-modal').classList.remove('hidden')}
-    function isoMeta(iso,index){const d=new Date(iso+'T12:00:00'),w=['日','一','二','三','四','五','六'][d.getDay()],md=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;return{day:`Day ${index+1}`,date:md,w,items:[]}}
-    function mdToIso(md){const y=(tripConfig.startDate||'2026').slice(0,4),[m,d]=md.split('/');return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
-    function confirmBatchImport(mode){const good=batchImportRows.filter(x=>x.date&&x.time&&x.title);if(!good.length)return alert('沒有可匯入資料');if(mode==='replace'&&!confirm('確定以匯入內容取代目前所有行程？'))return;let newDays=mode==='replace'?[]:daysData;for(const r of good){const md=r.date.slice(5).replace('-','/');let day=newDays.find(d=>d.date===md);if(!day){day=isoMeta(r.date,newDays.length);newDays.push(day)}day.items.push({id:'item-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),time:r.time,title:r.title,type:'',tagClass:'',group:'',address:r.address||r.title,city:r.city||tripConfig.city,note:r.note,intro:r.intro,website:r.website,reservationUrl:r.reservationUrl,wiki:r.title,image:''})}newDays.sort((a,b)=>mdToIso(a.date).localeCompare(mdToIso(b.date)));newDays.forEach((d,i)=>{d.day=`Day ${i+1}`;d.w=['日','一','二','三','四','五','六'][new Date(mdToIso(d.date)+'T12:00:00').getDay()];d.items.sort((a,b)=>String(a.time).localeCompare(String(b.time)))});daysData=newDays;saveDays();const dates=good.map(x=>x.date).sort();tripConfig.startDate=dates[0];tripConfig.endDate=dates[dates.length-1];saveTripConfig();persistActiveTripSnapshot();currentDayIndex=0;currentGroup='';renderDatePicker();renderTimeline(0);closeGlobalModal();populateWeatherCities();updateDailyScheduleWeather(true);alert(`已匯入 ${good.length} 筆行程。Google Maps、城市天氣與景點圖片會依資料自動產生。`)}
-    function downloadBatchSample(){const csv='\ufeff日期,時間,行程名稱,地址,城市,簡介,備註,網址,預約網址\r\n';downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'TripBook_行程批次匯入空白Sample.csv')}
-
-    window.addEventListener('beforeunload',()=>{try{persistActiveTripSnapshot()}catch(e){}});
-
     async function resetPhoneContent(){
-      const t=activeTripMeta();
-      const ok=confirm(`確定要重製「${t?.title||'目前旅程'}」嗎？\n\n只會重製目前這一趟旅行；其他旅程不受影響。\n\n此操作無法復原。`);
+      const ok=confirm('確定要重製這支手機的 APP 內容嗎？\n\n將清除本裝置自行編輯的行程、記帳、匯率、預算、必買推薦／購物清單、日誌、準備清單與個人筆記，並恢復目前 APP 的最新初始內容。\n\n此操作無法復原。');
       if(!ok)return;
-      clearTripLocalData();
-      if(t?.useTokyoSeed!==false){
-        t.snapshot=null;
-      }else{
-        const cfg={...defaultTripConfig,title:t.title||'我的旅行',headerTitle:t.title||'我的旅行',emoji:'✈️',country:t.country||'',city:t.city||'',startDate:t.startDate,endDate:t.endDate,cover:t.cover||'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true};
-        t.snapshot=createBlankTripSnapshot(cfg);
-        restoreTripSnapshot(t);
-      }
-      saveTripManagerState();
-      alert('目前旅程已重製，其他旅程資料保留。');
+      const exactKeys=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2'];
+      exactKeys.forEach(k=>localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k=>k.startsWith('note-')||k.startsWith('tokyo-weather-')).forEach(k=>localStorage.removeItem(k));
+      try{await clearMediaStore();}catch(e){}
+      alert('此裝置內容已重製，將重新載入最新初始資料。旅遊憑證仍保留。');
       location.reload();
     }
 
