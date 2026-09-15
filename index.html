@@ -344,12 +344,17 @@
         <div id="splash-trip-title" class="text-xl font-bold tracking-wide">東京自由行 2026</div>
         <div id="splash-trip-dates" class="text-[10px] opacity-85 mt-1">2026/10/25 ～ 2026/11/01</div>
       </div>
-      <div id="splash-countdown-box" class="w-full bg-white/90 text-torii text-xs font-bold py-2 px-4 rounded-full shadow-md backdrop-blur-md flex items-center justify-center">
-        ⏳ 距離出發還有 <span id="splash-countdown" class="mx-1">--</span> 天
-      </div>
-      <button onclick="startApp()" class="w-full bg-white/95 hover:bg-white text-wood font-bold py-3.5 px-8 rounded-full shadow-glow border border-white text-sm tracking-widest btn-press flex items-center justify-center gap-2 mx-auto backdrop-blur-md">
-        <span>開始旅程</span><i class="fa-solid fa-arrow-right text-xs text-torii"></i>
-      </button>
+      <!-- 1. 出發倒數標籤 (極淺櫻花粉底色 + 鮮明紅字) -->
+<div class="w-full bg-[#FFF0F3] text-[#E05244] text-xs font-bold py-2.5 px-4 rounded-full shadow-lg backdrop-blur-md flex items-center justify-center gap-1.5 border border-white/60">
+  <span>⏳ 距離出發還有</span>
+  <span id="splash-countdown" class="text-sm font-extrabold text-[#D93829]">--</span>
+  <span>天</span>
+</div>
+     <!-- 2. 開始旅程按鈕 (高對比白色毛玻璃按鈕) -->
+    <button onclick="startApp()" class="w-full bg-white/95 hover:bg-white text-gray-800 font-bold py-3.5 px-6 rounded-full shadow-xl border border-white text-sm tracking-widest transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 backdrop-blur-md">
+      <span>開始旅程</span>
+      <i class="fa-solid fa-arrow-right text-xs text-pink-500"></i>
+    </button>
     </div>
   </div>
 
