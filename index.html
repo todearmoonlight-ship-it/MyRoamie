@@ -324,6 +324,10 @@
       background:#F7F4EB;
     }
 
+    .mobile-form-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+    .mobile-form-grid > *{min-width:0;}
+    @media (min-width:390px){.mobile-form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
   </style>
 </head>
 <body class="pb-24 max-w-md mx-auto relative min-h-screen border-x border-sand/60 shadow-2xl">
@@ -519,12 +523,12 @@
         <div class="expense-summary-grid pr-8">
           <div class="min-w-0">
             <div id="expense-total-label" class="text-xs opacity-80">總累計支出</div>
-            <div class="text-2xl keep-text-2xl font-bold tracking-tight mt-2">NT$ <span id="total-twd">0</span></div>
-            <div class="text-xs opacity-90 mt-2">日幣總額: ¥<span id="total-jpy">0</span></div>
+            <div class="text-2xl keep-text-2xl font-bold tracking-tight mt-2"><span id="base-currency-label">NTD</span> <span id="total-twd">0</span></div>
+            <div class="text-xs opacity-90 mt-2"><span id="foreign-currency-label">JPY</span> 總額: <span id="total-jpy">0</span></div>
           </div>
           <div class="text-right min-w-0">
             <div id="expense-budget-label" class="text-xs opacity-80">旅遊總預算</div>
-            <div class="text-2xl keep-text-2xl font-bold mt-2">NT$ <span id="budget-total">80,000</span></div>
+            <div class="text-2xl keep-text-2xl font-bold mt-2"><span id="budget-currency-label">NTD</span> <span id="budget-total">80,000</span></div>
             <div class="text-xs opacity-90 mt-2">已使用 <span id="budget-percent">0</span>%</div>
           </div>
         </div>
@@ -532,8 +536,8 @@
         <div class="space-y-2">
           <div class="budget-track"><div id="budget-fill" class="budget-fill" style="width:0%"></div></div>
           <div class="grid grid-cols-2 gap-2 text-[10px] opacity-90">
-            <span>已支出 NT$ <span id="budget-spent">0</span></span>
-            <span class="text-right">剩餘 NT$ <span id="budget-left">80,000</span></span>
+            <span>已支出 <span id="budget-spent-currency">NTD</span> <span id="budget-spent">0</span></span>
+            <span class="text-right">剩餘 <span id="budget-left-currency">NTD</span> <span id="budget-left">80,000</span></span>
           </div>
         </div>
 
@@ -561,7 +565,7 @@
             <i class="fa-solid fa-coins"></i>
           </button>
         </div>
-        <div class="text-[10px] opacity-75 text-right -mt-1">預設匯率 <span id="rate-display">0.22</span></div>
+        <div class="text-[10px] opacity-75 text-right -mt-1"><span id="rate-caption">匯率 1 JPY = 0.22 NTD</span></div>
       </div>
 
       <!-- OCR 文字掃描記帳 -->
@@ -688,9 +692,9 @@
           <div class="flex items-center gap-1.5 font-bold text-wood text-sm">
             <i class="fa-solid fa-coins text-amber-500"></i> 匯率換算
           </div>
-          <div class="text-[10px] text-gray-400">JPY 日幣</div>
+          <div class="text-[10px] text-gray-400" id="tool-foreign-label">JPY</div>
           <input type="number" id="tool-jpy-input" value="10000" oninput="calcToolExchange()" class="w-full p-2 bg-paper rounded-xl border border-sand font-bold text-xs focus:outline-none">
-          <div class="text-xs font-bold text-skyBlue" id="tool-ntd-result">約 NT$2,200</div>
+          <div class="text-xs font-bold text-skyBlue" id="tool-ntd-result">約 NTD 2,200</div>
         </div>
 
         <div class="bg-card p-4 rounded-3xl border border-sand shadow-soft space-y-2">
@@ -698,7 +702,7 @@
             <i class="fa-solid fa-users text-skyBlue"></i> AA 分帳
           </div>
           <div>
-            <div class="text-[9px] text-gray-400">金額 JPY</div>
+            <div class="text-[9px] text-gray-400" id="aa-currency-label">金額 JPY</div>
             <input type="number" id="aa-amount" value="10000" class="w-full p-1.5 bg-paper rounded-xl border border-sand font-bold text-xs focus:outline-none">
           </div>
           <div>
@@ -1009,13 +1013,13 @@
     // ===== V15.1 通用旅程：保留原版 UI =====
     const V15_CONFIG_KEY='tripbook-v15-config';
     const TRIP_MANAGER_KEY='tripbook-v15-trip-manager';
-    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2',V15_CONFIG_KEY,'tripbook-v15-coupons'];
+    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
     const defaultTripConfig={
       title:'東京自由行 2026',headerTitle:'東京手帳 2026',emoji:'🍁',country:'日本',city:'東京',
       startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',
       showManual:true,manualUrl:'https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link',
       showMap:true,mapUrl:'https://www.google.com/maps/d/viewer?mid=18IC04UGBo0p-LLcvXxef7GwkgqtFO1Y&usp=sharing',
-      showCoupons:true,autoImages:true
+      showCoupons:true,autoImages:true,baseCurrency:'NTD',foreignCurrency:'JPY',exchangeRate:0.22
     };
     let tripConfig=(()=>{try{return {...defaultTripConfig,...JSON.parse(localStorage.getItem(V15_CONFIG_KEY)||'{}')}}catch(e){return {...defaultTripConfig}}})();
 
@@ -1041,7 +1045,7 @@
       const t=activeTripMeta();if(!t)return;
       t.snapshot=captureCurrentTripSnapshot();
       t.title=tripConfig.title||t.title;t.city=tripConfig.city||t.city;t.country=tripConfig.country||t.country;
-      t.startDate=tripConfig.startDate||t.startDate;t.endDate=tripConfig.endDate||t.endDate;t.cover=tripConfig.cover||t.cover;
+      t.startDate=tripConfig.startDate||t.startDate;t.endDate=tripConfig.endDate||t.endDate;t.cover=tripConfig.cover||t.cover;t.baseCurrency=baseCurrency?.()||tripConfig.baseCurrency||t.baseCurrency;t.foreignCurrency=foreignCurrency?.()||tripConfig.foreignCurrency||t.foreignCurrency;t.exchangeRate=currentExchangeRate||tripConfig.exchangeRate||t.exchangeRate;
       saveTripManagerState();
     }
     function clearTripLocalData(){
@@ -1065,11 +1069,12 @@
       return {
         'tokyo-days-v2':JSON.stringify(tripDates(cfg.startDate,cfg.endDate)),
         'tokyo-expenses-v2':'[]',
-        'tokyo-rate-v2':'0.22',
+        'tokyo-rate-v2':String(Number(cfg.exchangeRate)||0.22),
         'tokyo-budget-v2':'80000',
         'tokyo-shop-v2':JSON.stringify(blankShopData()),
         'tokyo-journals-v2':'[]',
         'tokyo-plan-v2':JSON.stringify(blankPlanData()),
+        'tripbook-v15-bookings':'[]',
         [V15_CONFIG_KEY]:JSON.stringify(cfg),
         'tripbook-v15-coupons':'[]'
       };
@@ -1434,18 +1439,52 @@
       currentDayIndex=found.dayIndex; renderTimeline(found.dayIndex); closeGlobalModal();
     }
 
+    // ---------------- 航程住宿：新旅程自行建立，不沿用東京預設 ----------------
+    let bookingItems=(()=>{try{return JSON.parse(localStorage.getItem('tripbook-v15-bookings')||'[]')}catch(e){return[]}})();
+    function saveBookingItems(){localStorage.setItem('tripbook-v15-bookings',JSON.stringify(bookingItems));persistActiveTripSnapshot();}
+    function bookingVoucherCard(){return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex items-center justify-between gap-3"><div><div class="text-xs font-bold text-wood"><i class="fa-solid fa-folder-open text-torii mr-1"></i>旅遊憑證（PDF／圖片）</div><div class="text-[9px] text-gray-400 mt-1">可將機票、住宿、門票等 PDF 或圖片憑證儲存在此裝置。</div></div><label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap"><i class="fa-solid fa-upload mr-1"></i>上傳憑證<input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden"></label></div><div id="booking-pdf-list" class="space-y-2 mt-3"></div></div>`;}
+    function renderBookingsForTrip(){
+      if(shouldUseTokyoSeed())return;
+      const box=document.getElementById('bookings-list');if(!box)return;
+      const cards=bookingItems.map(x=>x.type==='flight'?`<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex justify-between items-start gap-2 border-b border-dashed border-gray-200 pb-2 mb-3"><div class="font-bold text-skyBlue text-xs min-w-0"><i class="fa-solid fa-plane mr-1"></i>${escapeHtml(x.airline||'航班')} ${escapeHtml(x.flightNo||'')}</div><button onclick="deleteBookingItem('${x.id}')" class="text-red-300 shrink-0"><i class="fa-solid fa-trash"></i></button></div><div class="mobile-form-grid two"><div><div class="font-bold text-wood">${escapeHtml(x.from||'出發地')} → ${escapeHtml(x.to||'目的地')}</div><div class="text-[10px] text-gray-400 mt-1">${escapeHtml(x.date||'')} ${escapeHtml(x.departTime||'')}${x.arriveTime?' – '+escapeHtml(x.arriveTime):''}</div></div><div class="text-[10px] text-gray-500">${escapeHtml(x.note||'')}</div></div></div>`:`<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex justify-between items-start gap-2"><div class="flex gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-sakuraLight flex items-center justify-center text-torii shrink-0"><i class="fa-solid fa-house"></i></div><div class="min-w-0"><div class="font-bold text-wood text-sm">${escapeHtml(x.name||'住宿')}</div><div class="text-[10px] text-skyBlue font-bold mt-1">${escapeHtml(x.checkin||'')} ${x.checkout?'– '+escapeHtml(x.checkout):''}</div><div class="text-[10px] text-gray-500 mt-1 break-words">${escapeHtml(x.address||'')}</div>${x.note?`<div class="text-[10px] text-gray-400 mt-1">${escapeHtml(x.note)}</div>`:''}</div></div><button onclick="deleteBookingItem('${x.id}')" class="text-red-300 shrink-0"><i class="fa-solid fa-trash"></i></button></div></div>`).join('');
+      box.innerHTML=bookingVoucherCard()+`<div class="grid grid-cols-2 gap-2"><button onclick="openBookingEditor('flight')" class="py-3 rounded-xl bg-skyLight text-skyBlue font-bold text-xs btn-press"><i class="fa-solid fa-plane-departure mr-1"></i>新增航班</button><button onclick="openBookingEditor('hotel')" class="py-3 rounded-xl bg-sakuraLight text-torii font-bold text-xs btn-press"><i class="fa-solid fa-hotel mr-1"></i>新增住宿</button></div>`+(cards||'<div class="text-center text-gray-400 text-xs py-8">尚未填寫航班或住宿，請自行新增。</div>');
+      renderBookingPdfs();
+    }
+    function openBookingEditor(type){
+      document.getElementById('modal-title').innerText=type==='flight'?'新增航班':'新增住宿';
+      document.getElementById('modal-form-body').innerHTML=type==='flight'?`<div class="mobile-form-grid two"><input id="bk-airline" placeholder="航空公司" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="bk-flightno" placeholder="航班號碼" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div class="mobile-form-grid two"><input id="bk-from" placeholder="出發機場／城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="bk-to" placeholder="抵達機場／城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><input id="bk-date" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">起飛</label><input id="bk-depart" type="time" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">抵達</label><input id="bk-arrive" type="time" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div><textarea id="bk-note" placeholder="航廈、座位、行李或其他備註" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20"></textarea><button onclick="submitBookingItem('flight')" class="w-full py-2.5 bg-skyBlue text-white rounded-xl font-bold">儲存航班</button>`:`<input id="bk-name" placeholder="飯店／住宿名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">入住</label><input id="bk-checkin" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">退房</label><input id="bk-checkout" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div><input id="bk-address" placeholder="地址（選填）" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><textarea id="bk-note" placeholder="訂房編號、早餐、入住提醒等" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20"></textarea><button onclick="submitBookingItem('hotel')" class="w-full py-2.5 bg-torii text-white rounded-xl font-bold">儲存住宿</button>`;
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+    function submitBookingItem(type){
+      if(type==='flight'){const from=document.getElementById('bk-from').value.trim(),to=document.getElementById('bk-to').value.trim();if(!from||!to)return alert('請填寫出發地與目的地');bookingItems.push({id:'bk-'+Date.now(),type,airline:document.getElementById('bk-airline').value.trim(),flightNo:document.getElementById('bk-flightno').value.trim(),from,to,date:document.getElementById('bk-date').value,departTime:document.getElementById('bk-depart').value,arriveTime:document.getElementById('bk-arrive').value,note:document.getElementById('bk-note').value.trim()});}
+      else{const name=document.getElementById('bk-name').value.trim();if(!name)return alert('請填寫住宿名稱');bookingItems.push({id:'bk-'+Date.now(),type,name,checkin:document.getElementById('bk-checkin').value,checkout:document.getElementById('bk-checkout').value,address:document.getElementById('bk-address').value.trim(),note:document.getElementById('bk-note').value.trim()});}
+      saveBookingItems();closeGlobalModal();renderBookingsForTrip();initBookingPdfUpload();
+    }
+    function deleteBookingItem(id){if(!confirm('確定刪除這筆航程／住宿資料？'))return;bookingItems=bookingItems.filter(x=>x.id!==id);saveBookingItems();renderBookingsForTrip();initBookingPdfUpload();}
+
     // ---------------- 記帳：照片保存、點擊展開、可編輯 OCR 金額 ----------------
     let expenses = (()=>{try{const s=localStorage.getItem('tokyo-expenses-v2');return s?JSON.parse(s):[
       { id:1,note:'一蘭拉麵',amount:1980,currency:'JPY',category:'餐飲',payMethod:'現金',time:'2026/10/25 18:30',receiptImage:'' },
       { id:2,note:'Suica 加值',amount:3000,currency:'JPY',category:'交通',payMethod:'交通卡',time:'2026/10/25 13:30',receiptImage:'' }
     ]}catch(e){return[]}})();
     let currentCategoryFilter='全部';
+    function baseCurrency(){return String(tripConfig.baseCurrency||'NTD').trim().toUpperCase()||'NTD';}
+    function foreignCurrency(){return String(tripConfig.foreignCurrency||'JPY').trim().toUpperCase()||'JPY';}
+    function toBaseAmount(amount,currency){return String(currency).toUpperCase()===foreignCurrency()?amount*currentExchangeRate:amount;}
+    function toForeignAmount(amount,currency){return String(currency).toUpperCase()===foreignCurrency()?amount:(currentExchangeRate?amount/currentExchangeRate:0);}
+    function expenseCurrencyOptions(selected){return [foreignCurrency(),baseCurrency()].filter((x,i,a)=>a.indexOf(x)===i).map(c=>`<option value="${c}" ${String(selected||'').toUpperCase()===c?'selected':''}>${c}</option>`).join('');}
+    function applyCurrencyUI(){
+      const b=baseCurrency(),f=foreignCurrency();
+      [['base-currency-label',b],['budget-currency-label',b],['budget-spent-currency',b],['budget-left-currency',b],['foreign-currency-label',f],['tool-foreign-label',f],['aa-currency-label','金額 '+f]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v});
+      const rc=document.getElementById('rate-caption');if(rc)rc.textContent=`匯率 1 ${f} = ${currentExchangeRate} ${b}`;
+    }
+
     function saveExpenses(){localStorage.setItem('tokyo-expenses-v2',JSON.stringify(expenses));localStorage.setItem('tokyo-rate-v2',String(currentExchangeRate));}
     const savedRate=parseFloat(localStorage.getItem('tokyo-rate-v2')); if(!isNaN(savedRate))currentExchangeRate=savedRate;
     let travelBudget=parseFloat(localStorage.getItem('tokyo-budget-v2')); if(isNaN(travelBudget)||travelBudget<=0)travelBudget=80000;
     function saveBudget(){localStorage.setItem('tokyo-budget-v2',String(travelBudget));}
 
-    function changeExchangeRate(){const n=prompt('請輸入新匯率 (例如 0.22):',currentExchangeRate);if(n&&!isNaN(n)){currentExchangeRate=parseFloat(n);document.getElementById('rate-display').innerText=currentExchangeRate;saveExpenses();renderExpenses();calcToolExchange();}}
+    function changeExchangeRate(){const n=prompt(`請輸入匯率：1 ${foreignCurrency()} = ? ${baseCurrency()}`,currentExchangeRate);if(n&&!isNaN(n)&&Number(n)>0){currentExchangeRate=parseFloat(n);tripConfig.exchangeRate=currentExchangeRate;saveTripConfig();saveExpenses();applyCurrencyUI();renderExpenses();calcToolExchange();}}
     function openExpenseSettings(){
       document.getElementById('modal-title').innerHTML='<span><i class="fa-solid fa-gear text-skyBlue mr-2"></i>記帳設定</span>';
       document.getElementById('modal-form-body').innerHTML=`
@@ -1455,7 +1494,7 @@
           <button type="button" onclick="exportExpensesCSV();closeGlobalModal()" class="p-3 rounded-xl bg-[#EBF6EC] text-emerald-700 font-bold btn-press"><i class="fa-solid fa-file-csv mr-1.5"></i>匯出 CSV</button>
           <button type="button" onclick="exportExpensesExcel();closeGlobalModal()" class="p-3 rounded-xl bg-[#EBF6EC] text-emerald-700 font-bold btn-press"><i class="fa-solid fa-file-excel mr-1.5"></i>匯出 Excel</button>
         </div>
-        <div class="text-[10px] text-gray-400 bg-paper rounded-xl p-2.5">目前匯率：1 日圓 ≈ NT$ <b>${currentExchangeRate}</b><br>目前旅遊總預算：NT$ <b>${Math.round(travelBudget).toLocaleString()}</b><br>匯出檔案包含日期、項目、類別、付款方式、原幣金額與台幣估算；不嵌入收據照片。</div>`;
+        <div class="text-[10px] text-gray-400 bg-paper rounded-xl p-2.5">目前匯率：1 ${foreignCurrency()} = <b>${currentExchangeRate}</b> ${baseCurrency()}<br>目前旅遊總預算：${baseCurrency()} <b>${Math.round(travelBudget).toLocaleString()}</b><br>匯出檔案包含日期、項目、類別、付款方式、原幣金額與 ${baseCurrency()} 估算；不嵌入收據照片。</div>`;
       document.getElementById('global-modal').classList.remove('hidden');
     }
     function filterExpenseCategory(cat){
@@ -1507,8 +1546,8 @@
       let displayTotalTwd=0,displayTotalJpy=0;
       filtered.forEach(item=>{
         const amount=Number(item.amount)||0;
-        displayTotalTwd+=item.currency==='JPY'?amount*currentExchangeRate:amount;
-        displayTotalJpy+=item.currency==='JPY'?amount:amount/currentExchangeRate;
+        displayTotalTwd+=toBaseAmount(amount,item.currency);
+        displayTotalJpy+=toForeignAmount(amount,item.currency);
       });
 
       const groups=[];
@@ -1529,7 +1568,7 @@
       groups.forEach(group=>{
         const dayTwd=group.items.reduce((sum,item)=>{
           const amount=Number(item.amount)||0;
-          return sum+(item.currency==='JPY'?amount*currentExchangeRate:amount);
+          return sum+(toBaseAmount(amount,item.currency));
         },0);
         const wrap=document.createElement('div');
         wrap.className='bg-paper rounded-2xl border border-sand/70 overflow-hidden';
@@ -1540,7 +1579,7 @@
               <div class="text-[10px] text-gray-400 mt-0.5">${group.items.length} 筆消費</div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-              <div class="text-right"><div class="font-bold text-torii">約 NT$ ${Math.round(dayTwd).toLocaleString()}</div><div class="text-[9px] text-gray-400">點擊展開明細</div></div>
+              <div class="text-right"><div class="font-bold text-torii">約 ${baseCurrency()} ${Math.round(dayTwd).toLocaleString()}</div><div class="text-[9px] text-gray-400">點擊展開明細</div></div>
               <i data-expense-day-icon="${group.key}" class="fa-solid fa-chevron-down text-gray-400 transition-transform"></i>
             </div>
           </button>
@@ -1549,7 +1588,7 @@
         const body=wrap.querySelector('[data-expense-day-body]');
         group.items.forEach(item=>{
           const amount=Number(item.amount)||0;
-          const approxTwd=item.currency==='JPY'?Math.round(amount*currentExchangeRate):Math.round(amount);
+          const approxTwd=Math.round(toBaseAmount(amount,item.currency));
           const row=document.createElement('div');
           row.className='p-2.5 bg-card rounded-xl border border-sand/60';
           row.innerHTML=`<div class="flex justify-between items-center gap-2 cursor-pointer" onclick="toggleExpenseDetail(${item.id})">
@@ -1557,7 +1596,7 @@
               <div class="font-bold text-wood truncate">${item.note}</div>
               <div class="text-[10px] text-gray-400 mt-0.5"><span class="bg-skyLight text-skyBlue px-1.5 py-0.5 rounded font-bold mr-1">${item.category}</span> ・ ${item.payMethod}${expenseTimeOnly(item)?` ・ ${expenseTimeOnly(item)}`:''}</div>
             </div>
-            <div class="text-right shrink-0"><div class="font-bold text-torii">${item.currency==='JPY'?'¥':'NT$'} ${amount.toLocaleString()}</div><div class="text-[9px] text-gray-400">約 NT$${approxTwd.toLocaleString()}</div></div>
+            <div class="text-right shrink-0"><div class="font-bold text-torii">${escapeHtml(String(item.currency||baseCurrency()))} ${amount.toLocaleString()}</div><div class="text-[9px] text-gray-400">約 ${baseCurrency()} ${approxTwd.toLocaleString()}</div></div>
           </div>
           <div id="expense-detail-${item.id}" class="hidden pt-3 mt-2 border-t border-dashed space-y-2">
             ${item.receiptImage?`<button class="w-full" onclick="event.stopPropagation();showReceiptPhoto(${item.id})">${mediaImgTag(item.receiptImage,'receipt-preview','收據照片')}</button>`:'<div class="text-[10px] text-gray-400">此筆沒有收據照片</div>'}
@@ -1568,10 +1607,10 @@
       });
 
       hydrateMediaImages(list);
-      const spentTwd=expenses.reduce((sum,item)=>{const amount=Number(item.amount)||0;return sum+(item.currency==='JPY'?amount*currentExchangeRate:amount)},0);
+      const spentTwd=expenses.reduce((sum,item)=>{const amount=Number(item.amount)||0;return sum+(toBaseAmount(amount,item.currency))},0);
       document.getElementById('total-jpy').innerText=Math.round(displayTotalJpy).toLocaleString();
       document.getElementById('total-twd').innerText=Math.round(displayTotalTwd).toLocaleString();
-      document.getElementById('rate-display').innerText=currentExchangeRate;
+      applyCurrencyUI();
       const label=document.getElementById('expense-total-label');
       if(label)label.innerText=currentCategoryFilter==='全部'?'總累計支出':currentCategoryFilter+'累計支出';
       renderBudget(Math.round(spentTwd));
@@ -1584,23 +1623,23 @@
       const fill=document.getElementById('budget-fill');if(fill)fill.style.width=pct+'%';
     }
     function editTravelBudget(){
-      const v=prompt('請輸入旅遊總預算（台幣）',travelBudget);
+      const v=prompt('請輸入旅遊總預算（${baseCurrency()}）',travelBudget);
       if(v===null)return;const n=Number(v);if(!Number.isFinite(n)||n<=0)return alert('請輸入有效預算');
       travelBudget=n;saveBudget();renderExpenses();
     }
     function exportRows(){
       return expenses.slice().sort((a,b)=>String(a.time).localeCompare(String(b.time))).map(e=>({
-        日期時間:e.time,項目:e.note,類別:e.category,付款方式:e.payMethod,幣別:e.currency,原幣金額:Number(e.amount),台幣估算:Math.round(e.currency==='JPY'?Number(e.amount)*currentExchangeRate:Number(e.amount))
+        日期時間:e.time,項目:e.note,類別:e.category,付款方式:e.payMethod,幣別:e.currency,原幣金額:Number(e.amount),[baseCurrency()+'估算']:Math.round(toBaseAmount(Number(e.amount),e.currency))
       }));
     }
     function exportExpensesCSV(){
-      const rows=exportRows(),headers=['日期時間','項目','類別','付款方式','幣別','原幣金額','台幣估算'];
+      const rows=exportRows(),headers=['日期時間','項目','類別','付款方式','幣別','原幣金額',baseCurrency()+'估算'];
       const escCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
       const csv='\ufeff'+[headers.join(','),...rows.map(r=>headers.map(h=>escCsv(r[h])).join(','))].join('\r\n');
       downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'Tokyo_2026_記帳.csv');
     }
     function exportExpensesExcel(){
-      const rows=exportRows(),headers=['日期時間','項目','類別','付款方式','幣別','原幣金額','台幣估算'];
+      const rows=exportRows(),headers=['日期時間','項目','類別','付款方式','幣別','原幣金額',baseCurrency()+'估算'];
       const e=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const table=`<html><head><meta charset="UTF-8"></head><body><table border="1"><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${headers.map(h=>`<td>${e(r[h])}</td>`).join('')}</tr>`).join('')}</table></body></html>`;
       downloadBlob(new Blob(['\ufeff',table],{type:'application/vnd.ms-excel'}),'Tokyo_2026_記帳.xls');
@@ -1621,7 +1660,7 @@
       const item=expenses.find(x=>x.id===id);if(!item)return;
       document.getElementById('modal-title').innerText='編輯支出';document.getElementById('modal-form-body').innerHTML=`
         <input id="edit-exp-note" value="${item.note}" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div class="grid grid-cols-2 gap-2"><input type="number" id="edit-exp-amount" value="${item.amount}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><select id="edit-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><option value="JPY" ${item.currency==='JPY'?'selected':''}>日幣 JPY</option><option value="NTD" ${item.currency==='NTD'?'selected':''}>台幣 NTD</option></select></div>
+        <div class="mobile-form-grid two"><input type="number" id="edit-exp-amount" value="${item.amount}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><select id="edit-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand">${expenseCurrencyOptions(item.currency)}</select></div>
         <div class="grid grid-cols-2 gap-2"><select id="edit-exp-pay" class="w-full p-2 bg-paper rounded-xl border border-sand">${['現金','信用卡','交通卡'].map(x=>`<option ${item.payMethod===x?'selected':''}>${x}</option>`).join('')}</select><select id="edit-exp-cat" class="w-full p-2 bg-paper rounded-xl border border-sand">${['餐飲','交通','購物','票券','伴手禮','其他'].map(x=>`<option ${item.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
         ${item.receiptImage?mediaImgTag(item.receiptImage,'receipt-preview','收據照片'):''}<button onclick="saveExpenseEdit(${id})" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl">儲存修改</button>`;document.getElementById('global-modal').classList.remove('hidden');hydrateMediaImages(document.getElementById('modal-form-body'));
     }
@@ -1786,7 +1825,7 @@
         id,
         note:finalTitle,
         amount:Number(amount)||0,
-        currency:'JPY',
+        currency:foreignCurrency(),
         category:finalCategory,
         payMethod:'現金',
         time:new Date().toLocaleString('zh-TW',{hour12:false}),
@@ -1807,7 +1846,7 @@
         ? candidates.map((c,i)=>`
           <button type="button" onclick="document.getElementById('ocr-final-amount').value='${c.value}';document.querySelectorAll('.ocr-candidate-btn').forEach(x=>x.classList.remove('ring-2','ring-skyBlue'));this.classList.add('ring-2','ring-skyBlue')" class="ocr-candidate-btn w-full flex items-center justify-between p-3 rounded-xl border border-sand bg-paper text-left ${i===0?'ring-2 ring-skyBlue':''}">
             <span class="text-gray-500">候選 ${i+1}</span>
-            <span class="font-bold text-wood text-base">¥${c.value.toLocaleString()}</span>
+            <span class="font-bold text-wood text-base">${foreignCurrency()} ${c.value.toLocaleString()}</span>
           </button>`).join('')
         : '<div class="p-3 rounded-xl bg-amber-50 text-amber-700 text-xs">沒有找到可靠金額，請直接手動輸入。</div>';
 
@@ -1832,7 +1871,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-[10px] text-gray-400 mb-1">確認金額（JPY）</label>
+            <label class="block text-[10px] text-gray-400 mb-1">確認金額（${foreignCurrency()}）</label>
             <input id="ocr-final-amount" type="number" inputmode="numeric" value="${best}" placeholder="例如 1280" class="w-full p-3 bg-paper rounded-xl border border-sand font-bold text-base">
           </div>
         </div>
@@ -2125,8 +2164,8 @@
 
     // ---------------- 工具計算器 ----------------
     function calcToolExchange() {
-      const jpy = parseFloat(document.getElementById('tool-jpy-input').value) || 0;
-      document.getElementById('tool-ntd-result').innerText = `約 NT$${Math.round(jpy * currentExchangeRate).toLocaleString()}`;
+      const foreign = parseFloat(document.getElementById('tool-jpy-input').value) || 0;
+      document.getElementById('tool-ntd-result').innerText = `約 ${baseCurrency()} ${Math.round(foreign * currentExchangeRate).toLocaleString()}`;
     }
 
     function calcAASplit() {
@@ -2134,7 +2173,7 @@
       const people = parseInt(document.getElementById('aa-people').value) || 1;
       const perJpy = Math.round(amt / people);
       const res = document.getElementById('aa-result');
-      res.innerText = `每人平均: ¥${perJpy.toLocaleString()} (約 NT$${Math.round(perJpy * currentExchangeRate)})`;
+      res.innerText = `每人平均: ${foreignCurrency()} ${perJpy.toLocaleString()} (約 ${baseCurrency()} ${Math.round(perJpy * currentExchangeRate)})`;
       res.classList.remove('hidden');
     }
 
@@ -2350,7 +2389,7 @@
       renderBookingPdfs();
     }
 
-    document.addEventListener('DOMContentLoaded',()=>{initBookingPdfUpload();applyTripConfigUI();populateWeatherCities();updateWeatherDisplay(false);setTimeout(()=>{migrateLegacyMediaToIndexedDB();updateDailyScheduleWeather(false);},400);});
+    document.addEventListener('DOMContentLoaded',()=>{renderBookingsForTrip();initBookingPdfUpload();applyTripConfigUI();applyCurrencyUI();populateWeatherCities();updateWeatherDisplay(false);setTimeout(()=>{migrateLegacyMediaToIndexedDB();updateDailyScheduleWeather(false);},400);});
 
     const defaultCoupons = [
       {name:"松本清",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_01.webp"},
@@ -2475,7 +2514,8 @@
       const titleEl = document.getElementById('modal-title');
       const bodyEl = document.getElementById('modal-form-body');
 
-      if (activeTab === 'schedule') {
+      if (activeTab === 'bookings') { closeGlobalModal(); openBookingEditor('flight'); return;
+      } else if (activeTab === 'schedule') {
         titleEl.innerHTML = `<div class="flex items-center gap-2"><span class="px-2.5 py-1 rounded-lg bg-skyBlue text-white">新增景點</span><button type="button" onclick="closeGlobalModal();openCandidateModal()" class="px-2.5 py-1 rounded-lg bg-paper border border-sand text-skyBlue btn-press">備選景點</button></div>`;
         bodyEl.innerHTML = `
           <input type="text" id="m-title" placeholder="景點名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
@@ -2489,10 +2529,7 @@
           <input type="text" id="m-exp-note" placeholder="項目名稱 (例: 拉麵)" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
           <div class="grid grid-cols-2 gap-2">
             <input type="number" id="m-exp-amount" placeholder="金額" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-            <select id="m-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand font-bold text-wood">
-              <option value="JPY">日幣 JPY</option>
-              <option value="NTD">台幣 NTD</option>
-            </select>
+            <select id="m-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand font-bold text-wood">${expenseCurrencyOptions(foreignCurrency())}</select>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <select id="m-exp-pay" class="w-full p-2 bg-paper rounded-xl border border-sand font-bold text-wood">
@@ -2833,20 +2870,26 @@
       document.getElementById('modal-title').innerText='建立新旅程';
       document.getElementById('modal-form-body').innerHTML=`
         <input id="new-trip-title" placeholder="旅程名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div class="grid grid-cols-2 gap-2"><input id="new-trip-country" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="new-trip-city" placeholder="主要城市 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
-        <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="new-trip-start" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="new-trip-end" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
+        <div class="mobile-form-grid two"><input id="new-trip-country" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="new-trip-city" placeholder="主要城市 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
+        <div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="new-trip-start" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="new-trip-end" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
+        <div class="p-3 rounded-2xl bg-skyLight/60 border border-skyBlue/20 space-y-2">
+          <div class="font-bold text-xs text-wood"><i class="fa-solid fa-coins text-amber-500 mr-1"></i>記帳幣別與匯率</div>
+          <div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">主要幣別</label><input id="new-trip-base-currency" value="NTD" maxlength="6" placeholder="例如 NTD" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"></div><div><label class="block text-[10px] text-gray-400 mb-1">當地／外幣</label><input id="new-trip-foreign-currency" placeholder="例如 USD" maxlength="6" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"></div></div>
+          <div><label class="block text-[10px] text-gray-400 mb-1">匯率（1 外幣可換多少主要幣別）</label><input id="new-trip-rate" type="number" inputmode="decimal" min="0" step="0.0001" placeholder="例如 USD → NTD 請填 32" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div>
+        </div>
         <label class="block p-3 bg-paper border border-dashed border-sand rounded-xl text-center cursor-pointer"><i class="fa-solid fa-image text-amber-500 mr-1"></i>封面照片（選填）<input id="new-trip-cover" type="file" accept="image/*" class="hidden"></label>
         <button type="button" onclick="createManagedTrip()" class="w-full py-3 rounded-xl bg-skyBlue text-white font-bold">建立旅程</button>`;
       document.getElementById('global-modal').classList.remove('hidden');
     }
     async function createManagedTrip(){
-      const title=document.getElementById('new-trip-title').value.trim(),country=document.getElementById('new-trip-country').value.trim(),city=document.getElementById('new-trip-city').value.trim(),start=document.getElementById('new-trip-start').value,end=document.getElementById('new-trip-end').value;
+      const title=document.getElementById('new-trip-title').value.trim(),country=document.getElementById('new-trip-country').value.trim(),city=document.getElementById('new-trip-city').value.trim(),start=document.getElementById('new-trip-start').value,end=document.getElementById('new-trip-end').value,baseCurr=(document.getElementById('new-trip-base-currency').value.trim()||'NTD').toUpperCase(),foreignCurr=document.getElementById('new-trip-foreign-currency').value.trim().toUpperCase(),rate=Number(document.getElementById('new-trip-rate').value);
       if(!title||!city||!start||!end)return alert('請填寫旅程名稱、主要城市與日期');
+      if(!foreignCurr||!Number.isFinite(rate)||rate<=0)return alert('請填寫當地／外幣代碼與有效匯率');
       if(end<start)return alert('回程日期不可早於出發日期');
       persistActiveTripSnapshot();
-      const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true};
+      const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate};
       const f=document.getElementById('new-trip-cover')?.files?.[0];if(f){try{cfg.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover')}catch(e){}}
-      const t={id,title,city,country,startDate:start,endDate:end,cover:cfg.cover,useTokyoSeed:false,snapshot:createBlankTripSnapshot(cfg)};
+      const t={id,title,city,country,startDate:start,endDate:end,cover:cfg.cover,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate,useTokyoSeed:false,snapshot:createBlankTripSnapshot(cfg)};
       tripManagerState.trips.push(t);tripManagerState.activeId=id;saveTripManagerState();restoreTripSnapshot(t);location.reload();
     }
     function switchManagedTrip(id){
@@ -2869,8 +2912,9 @@
       document.getElementById('modal-title').innerText='目前旅程設定';
       document.getElementById('modal-form-body').innerHTML=`
         <input id="v15-trip-title" value="${escapeHtml(tripConfig.title||'')}" placeholder="旅程名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div class="grid grid-cols-2 gap-2"><input id="v15-trip-country" value="${escapeHtml(tripConfig.country||'')}" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="v15-trip-city" value="${escapeHtml(tripConfig.city||'')}" placeholder="主要城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
-        <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="v15-trip-start" type="date" value="${tripConfig.startDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="v15-trip-end" type="date" value="${tripConfig.endDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
+        <div class="mobile-form-grid two"><input id="v15-trip-country" value="${escapeHtml(tripConfig.country||'')}" placeholder="國家" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="v15-trip-city" value="${escapeHtml(tripConfig.city||'')}" placeholder="主要城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
+        <div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">出發日期</label><input id="v15-trip-start" type="date" value="${tripConfig.startDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">回程日期</label><input id="v15-trip-end" type="date" value="${tripConfig.endDate||''}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
+        <div class="p-3 rounded-2xl bg-skyLight/60 border border-skyBlue/20 space-y-2"><div class="font-bold text-xs">記帳幣別與匯率</div><div class="mobile-form-grid two"><input id="v15-base-currency" value="${escapeHtml(baseCurrency())}" placeholder="主要幣別 NTD" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"><input id="v15-foreign-currency" value="${escapeHtml(foreignCurrency())}" placeholder="外幣 USD" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"></div><input id="v15-exchange-rate" type="number" inputmode="decimal" step="0.0001" min="0" value="${currentExchangeRate}" placeholder="1 外幣 = ? 主要幣別" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div>
         <label class="block p-3 bg-paper border border-dashed border-sand rounded-xl text-center cursor-pointer">更換封面（選填）<input id="v15-trip-cover" type="file" accept="image/*" class="hidden"></label>
         <label class="flex items-center gap-2 text-xs"><input id="v15-auto-images" type="checkbox" ${tripConfig.autoImages!==false?'checked':''}> 自動取得景點圖片（Wikipedia / Wikimedia）</label>
         <button type="button" onclick="saveTripSettings()" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl">儲存旅程設定</button>`;
@@ -2879,8 +2923,9 @@
     async function saveTripSettings(){
       const start=document.getElementById('v15-trip-start').value,end=document.getElementById('v15-trip-end').value;if(start&&end&&end<start)return alert('回程日期不可早於出發日期');
       tripConfig.title=document.getElementById('v15-trip-title').value.trim()||'旅行手帳';tripConfig.headerTitle=tripConfig.title;tripConfig.country=document.getElementById('v15-trip-country').value.trim();tripConfig.city=document.getElementById('v15-trip-city').value.trim();tripConfig.startDate=start||tripConfig.startDate;tripConfig.endDate=end||tripConfig.endDate;tripConfig.autoImages=document.getElementById('v15-auto-images').checked;
+      const b=(document.getElementById('v15-base-currency').value.trim()||'NTD').toUpperCase(),fc=document.getElementById('v15-foreign-currency').value.trim().toUpperCase(),er=Number(document.getElementById('v15-exchange-rate').value);if(!fc||!Number.isFinite(er)||er<=0)return alert('請填寫有效的外幣與匯率');tripConfig.baseCurrency=b;tripConfig.foreignCurrency=fc;tripConfig.exchangeRate=er;currentExchangeRate=er;localStorage.setItem('tokyo-rate-v2',String(er));
       const f=document.getElementById('v15-trip-cover')?.files?.[0];if(f){try{tripConfig.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover',isMediaRef(tripConfig.cover)?tripConfig.cover:'')}catch(e){return alert('封面處理失敗')}}
-      saveTripConfig();persistActiveTripSnapshot();closeGlobalModal();populateWeatherCities();updateWeatherDisplay(true);updateDailyScheduleWeather(true);
+      saveTripConfig();persistActiveTripSnapshot();applyCurrencyUI();renderExpenses();calcToolExchange();closeGlobalModal();populateWeatherCities();updateWeatherDisplay(true);updateDailyScheduleWeather(true);
     }
 
     function openHeaderIconSettings(){
@@ -2927,7 +2972,7 @@
       if(t?.useTokyoSeed!==false){
         t.snapshot=null;
       }else{
-        const cfg={...defaultTripConfig,title:t.title||'我的旅行',headerTitle:t.title||'我的旅行',emoji:'✈️',country:t.country||'',city:t.city||'',startDate:t.startDate,endDate:t.endDate,cover:t.cover||'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true};
+        const cfg={...defaultTripConfig,title:t.title||'我的旅行',headerTitle:t.title||'我的旅行',emoji:'✈️',country:t.country||'',city:t.city||'',startDate:t.startDate,endDate:t.endDate,cover:t.cover||'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:t.baseCurrency||tripConfig.baseCurrency||'NTD',foreignCurrency:t.foreignCurrency||tripConfig.foreignCurrency||'JPY',exchangeRate:Number(t.exchangeRate||currentExchangeRate||tripConfig.exchangeRate)||0.22};
         t.snapshot=createBlankTripSnapshot(cfg);
         restoreTripSnapshot(t);
       }
