@@ -1,6 +1,6 @@
 {
-  "name": "2026 東京之旅",
-  "short_name": "東京之旅",
+  "name": "TripBook 通用旅遊規劃 APP",
+  "short_name": "TripBook",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -19,7 +19,5 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ],
-  "id": "./",
-  "orientation": "portrait"
+  ]
 }
