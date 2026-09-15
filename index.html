@@ -344,17 +344,12 @@
         <div id="splash-trip-title" class="text-xl font-bold tracking-wide">東京自由行 2026</div>
         <div id="splash-trip-dates" class="text-[10px] opacity-85 mt-1">2026/10/25 ～ 2026/11/01</div>
       </div>
-      <!-- 1. 出發倒數標籤 (極淺櫻花粉底色 + 鮮明紅字) -->
-<div class="w-full bg-[#FFF0F3] text-[#E05244] text-xs font-bold py-2.5 px-4 rounded-full shadow-lg backdrop-blur-md flex items-center justify-center gap-1.5 border border-white/60">
-  <span>⏳ 距離出發還有</span>
-  <span id="splash-countdown" class="text-sm font-extrabold text-[#D93829]">--</span>
-  <span>天</span>
-</div>
-     <!-- 2. 開始旅程按鈕 (高對比白色毛玻璃按鈕) -->
-    <button onclick="startApp()" class="w-full bg-white/95 hover:bg-white text-gray-800 font-bold py-3.5 px-6 rounded-full shadow-xl border border-white text-sm tracking-widest transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 backdrop-blur-md">
-      <span>開始旅程</span>
-      <i class="fa-solid fa-arrow-right text-xs text-pink-500"></i>
-    </button>
+      <div id="splash-countdown-box" class="w-full bg-white/90 text-torii text-xs font-bold py-2 px-4 rounded-full shadow-md backdrop-blur-md flex items-center justify-center">
+        ⏳ 距離出發還有 <span id="splash-countdown" class="mx-1">--</span> 天
+      </div>
+      <button onclick="startApp()" class="w-full bg-white/95 hover:bg-white text-wood font-bold py-3.5 px-8 rounded-full shadow-glow border border-white text-sm tracking-widest btn-press flex items-center justify-center gap-2 mx-auto backdrop-blur-md">
+        <span>開始旅程</span><i class="fa-solid fa-arrow-right text-xs text-torii"></i>
+      </button>
     </div>
   </div>
 
@@ -1036,9 +1031,20 @@
       return {activeId:'trip-tokyo-2026',trips:[{id:'trip-tokyo-2026',title:'東京自由行 2026',city:'東京',country:'日本',startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',useTokyoSeed:true,snapshot:null}]};
     }
     let tripManagerState=loadTripManagerState();
+    let tripTransitioning=false;
     function saveTripManagerState(){localStorage.setItem(TRIP_MANAGER_KEY,JSON.stringify(tripManagerState));}
     function activeTripMeta(){return tripManagerState.trips.find(x=>x.id===tripManagerState.activeId)||tripManagerState.trips[0]}
     function shouldUseTokyoSeed(){const t=activeTripMeta();return !t||t.useTokyoSeed!==false;}
+    function showTripSwitchOverlay(title='正在切換旅程…'){
+      let el=document.getElementById('trip-switch-overlay');
+      if(!el){
+        el=document.createElement('div');el.id='trip-switch-overlay';
+        el.className='fixed inset-0 z-[120] bg-[#FDFBF7]/95 backdrop-blur-md flex items-center justify-center p-6';
+        el.innerHTML='<div class="bg-card border border-sand rounded-3xl shadow-2xl px-7 py-6 text-center space-y-3"><i class="fa-solid fa-plane-departure text-skyBlue text-2xl animate-pulse"></i><div id="trip-switch-text" class="font-bold text-wood text-sm"></div><div class="text-[10px] text-gray-400">正在安全保存並載入此旅程資料</div></div>';
+        document.body.appendChild(el);
+      }
+      const t=el.querySelector('#trip-switch-text');if(t)t.textContent=title;el.classList.remove('hidden');
+    }
 
     function captureCurrentTripSnapshot(){
       const o={};
@@ -1047,6 +1053,7 @@
       return o;
     }
     function persistActiveTripSnapshot(){
+      if(tripTransitioning)return;
       const t=activeTripMeta();if(!t)return;
       t.snapshot=captureCurrentTripSnapshot();
       t.title=tripConfig.title||t.title;t.city=tripConfig.city||t.city;t.country=tripConfig.country||t.country;
@@ -1058,8 +1065,15 @@
       Object.keys(localStorage).filter(k=>k.startsWith('note-')).forEach(k=>localStorage.removeItem(k));
     }
     function restoreTripSnapshot(t){
-      clearTripLocalData();
-      Object.entries(t?.snapshot||{}).forEach(([k,v])=>localStorage.setItem(k,v));
+      const safety=captureCurrentTripSnapshot();
+      try{
+        clearTripLocalData();
+        Object.entries(t?.snapshot||{}).forEach(([k,v])=>localStorage.setItem(k,v));
+        return true;
+      }catch(e){
+        try{clearTripLocalData();Object.entries(safety).forEach(([k,v])=>localStorage.setItem(k,v));}catch(_){/* 保留原錯誤 */}
+        throw e;
+      }
     }
     function tripDates(start,end){
       const out=[];if(!start||!end)return out;
@@ -1134,6 +1148,7 @@
       requestAnimationFrame(syncStickyHeaderHeight);
       if(tabName==='expense') setTimeout(()=>warmReceiptOCR(),120);
       if(tabName==='schedule') setTimeout(()=>updateDailyScheduleWeather(false),80);
+      if(tabName==='tools') setTimeout(()=>updateWeatherDisplay(true),80);
       document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
       document.getElementById(`page-${tabName}`).classList.add('active');
       
@@ -1980,7 +1995,7 @@
         filters.innerHTML=`<div class="text-[10px] font-bold text-gray-400">購物清單分類</div><div class="flex gap-2 overflow-x-auto no-scrollbar">${['全部','藥品','伴手禮','美食','超商','其他'].map(c=>`<button onclick="setShoppingListFilter('${c}')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold border ${shoppingListFilter===c?'bg-skyBlue text-white border-skyBlue':'bg-card text-wood border-sand'}">${c}</button>`).join('')}</div>`;area.appendChild(filters);
         const items=shopData['購物清單'].map((item,idx)=>({item,idx})).filter(x=>shoppingListFilter==='全部'||x.item.category===shoppingListFilter);
         if(!items.length){area.insertAdjacentHTML('beforeend','<div class="text-center text-xs text-gray-400 py-6">此分類目前沒有商品</div>');return;}
-        items.forEach(({item,idx})=>{const div=document.createElement('div');div.className='flex justify-between items-center p-3 bg-card rounded-2xl border border-sand shadow-soft text-xs';div.innerHTML=`<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ${item.checked?'checked':''} onchange="shopData['購物清單'][${idx}].checked=this.checked;saveShop();renderShopContent()" class="accent-skyBlue w-4 h-4 rounded"><span class="${item.checked?'line-through text-gray-400':'text-wood font-bold'}">${item.name}</span><span class="text-[9px] px-1.5 py-0.5 rounded bg-paper border border-sand">${item.category||'其他'}</span></label><button onclick="shopData['購物清單'].splice(${idx},1);saveShop();renderShopContent();" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>`;area.appendChild(div);});
+        items.forEach(({item,idx})=>{const div=document.createElement('div');div.className='flex justify-between items-center gap-2 p-3 bg-card rounded-2xl border border-sand shadow-soft text-xs';div.innerHTML=`<label class="flex items-center gap-2 cursor-pointer min-w-0 flex-1"><input type="checkbox" ${item.checked?'checked':''} onchange="shopData['購物清單'][${idx}].checked=this.checked;saveShop();renderShopContent()" class="accent-skyBlue w-4 h-4 rounded shrink-0"><span class="truncate ${item.checked?'line-through text-gray-400':'text-wood font-bold'}">${escapeHtml(item.name)}</span><span class="text-[9px] px-1.5 py-0.5 rounded bg-paper border border-sand shrink-0">${escapeHtml(item.category||'其他')}</span></label><div class="flex gap-2 shrink-0"><button onclick="editShoppingListItem(${idx})" class="text-skyBlue" title="編輯"><i class="fa-solid fa-pen"></i></button><button onclick="shopData['購物清單'].splice(${idx},1);saveShop();renderShopContent();" class="text-red-300" title="刪除"><i class="fa-solid fa-trash"></i></button></div>`;area.appendChild(div);});
       } else {
         (shopData[activeShopTab]||[]).forEach((item,idx)=>{
           const id=`shop-detail-${activeShopTab}-${idx}`.replace(/[^a-zA-Z0-9_-]/g,'_');
@@ -1995,6 +2010,10 @@
             <div class="text-[11px] text-gray-600 leading-relaxed"><span class="font-bold text-wood">簡介：</span>${item.note||'尚無簡介'}</div>
             ${loc}
             ${activeShopTab==='美食' && item.location?`<a target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}" class="block text-center p-2 rounded-xl bg-skyLight text-skyBlue font-bold"><i class="fa-solid fa-map-location-dot mr-1"></i>Google Maps</a>`:''}
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="edit-shop-btn p-2 rounded-xl bg-skyLight text-skyBlue font-bold btn-press"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
+              <button type="button" class="delete-shop-btn p-2 rounded-xl bg-red-50 text-red-400 font-bold btn-press"><i class="fa-solid fa-trash mr-1"></i>刪除</button>
+            </div>
             <div class="flex items-center gap-2">
               <label class="flex-1 p-2 text-center rounded-xl bg-paper border border-dashed border-sand cursor-pointer"><i class="fa-solid fa-image text-amber-500 mr-1"></i>更換圖片<input type="file" accept="image/*" class="hidden" onchange="uploadShopImage('${activeShopTab}',${idx},this)"></label>
               <button type="button" title="加入購物清單" aria-label="加入購物清單" class="add-shop-btn w-11 h-10 rounded-xl bg-sakuraLight text-torii font-bold text-base btn-press"><i class="fa-solid fa-plus"></i></button>
@@ -2013,6 +2032,8 @@
             }
           });
           card.querySelector('.add-shop-btn').addEventListener('click',(e)=>{e.stopPropagation();addToShoppingList(item.name,activeShopTab);});
+          card.querySelector('.edit-shop-btn').addEventListener('click',(e)=>{e.stopPropagation();openShopEditModal(activeShopTab,idx);});
+          card.querySelector('.delete-shop-btn').addEventListener('click',(e)=>{e.stopPropagation();deleteShopRecommendation(activeShopTab,idx);});
           area.appendChild(card);
         });
         hydrateMediaImages(area);
@@ -2043,7 +2064,35 @@
       }else img.src=getShopFallbackImageUrl(name);
     }
     async function uploadShopImage(cat,idx,input){const file=input.files?.[0];if(!file)return;try{const data=await compressReceipt(file,800,.72);const old=shopData[cat][idx].image||'';shopData[cat][idx].image=await putMediaDataURL(data,'shop',isMediaRef(old)?old:'');saveShop();renderShopContent();}catch(e){console.error(e);alert('圖片讀取失敗');}finally{input.value='';}}
+    function openShopEditModal(cat,idx){
+      const item=shopData?.[cat]?.[idx];if(!item)return;
+      document.getElementById('modal-title').innerHTML='<span><i class="fa-solid fa-pen-to-square text-skyBlue mr-2"></i>編輯必買推薦</span>';
+      document.getElementById('modal-form-body').innerHTML=`
+        <input id="edit-shop-name" value="${escapeHtml(item.name||'')}" placeholder="品項名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+        <textarea id="edit-shop-note" placeholder="簡介／備註" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-24">${escapeHtml(item.note||'')}</textarea>
+        <input id="edit-shop-location" value="${escapeHtml(item.location||'')}" placeholder="購買地點（選填）" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+        <input id="edit-shop-wiki" value="${escapeHtml(item.wiki||'')}" placeholder="圖片搜尋關鍵字（選填）" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+        <button type="button" onclick="saveShopRecommendationEdit('${cat}',${idx})" class="w-full py-2.5 rounded-xl bg-skyBlue text-white font-bold btn-press">儲存修改</button>`;
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+    function saveShopRecommendationEdit(cat,idx){
+      const item=shopData?.[cat]?.[idx];if(!item)return;
+      const name=document.getElementById('edit-shop-name')?.value.trim();if(!name)return alert('請輸入品項名稱');
+      item.name=name;item.note=document.getElementById('edit-shop-note')?.value.trim()||'';item.location=document.getElementById('edit-shop-location')?.value.trim()||'';item.wiki=document.getElementById('edit-shop-wiki')?.value.trim()||'';
+      saveShop();renderShopContent();closeGlobalModal();
+    }
+    async function deleteShopRecommendation(cat,idx){
+      const item=shopData?.[cat]?.[idx];if(!item||!confirm(`確定刪除「${item.name||'此品項'}」？`))return;
+      if(item.image)await deleteMediaRef(item.image);shopData[cat].splice(idx,1);saveShop();renderShopContent();
+    }
     function addToShoppingList(name,category='其他'){shopData['購物清單'].push({name,checked:false,category});saveShop();alert(`已將「${name}」加入購物清單！`);}
+    function editShoppingListItem(idx){
+      const item=shopData['購物清單']?.[idx];if(!item)return;
+      document.getElementById('modal-title').innerText='編輯購物清單';
+      document.getElementById('modal-form-body').innerHTML=`<input id="edit-list-name" value="${escapeHtml(item.name||'')}" class="w-full p-2.5 bg-paper rounded-xl border border-sand" placeholder="品項名稱"><select id="edit-list-cat" class="w-full p-2.5 bg-paper rounded-xl border border-sand">${['藥品','伴手禮','美食','超商','其他'].map(c=>`<option ${c===(item.category||'其他')?'selected':''}>${c}</option>`).join('')}</select><button type="button" onclick="saveShoppingListItem(${idx})" class="w-full py-2.5 bg-skyBlue text-white rounded-xl font-bold">儲存修改</button>`;
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+    function saveShoppingListItem(idx){const item=shopData['購物清單']?.[idx];if(!item)return;const n=document.getElementById('edit-list-name')?.value.trim();if(!n)return alert('請輸入品項名稱');item.name=n;item.category=document.getElementById('edit-list-cat')?.value||'其他';saveShop();renderShopContent();closeGlobalModal();}
     renderShopContent();
 
     // ---------------- 日誌 (圖片顯示在文字下方) ----------------
@@ -2185,8 +2234,26 @@
     const weatherLocations={
       '東京':{lat:35.6762,lon:139.6503,timezone:'Asia/Tokyo'},
       '河口湖':{lat:35.5010,lon:138.7550,timezone:'Asia/Tokyo'},
-      '千葉':{lat:35.6329,lon:139.8804,timezone:'Asia/Tokyo'}
+      '千葉':{lat:35.6329,lon:139.8804,timezone:'Asia/Tokyo'},
+      '台南':{lat:22.9997,lon:120.2270,timezone:'Asia/Taipei'},'臺南':{lat:22.9997,lon:120.2270,timezone:'Asia/Taipei'},
+      '台北':{lat:25.0330,lon:121.5654,timezone:'Asia/Taipei'},'臺北':{lat:25.0330,lon:121.5654,timezone:'Asia/Taipei'},
+      '台中':{lat:24.1477,lon:120.6736,timezone:'Asia/Taipei'},'臺中':{lat:24.1477,lon:120.6736,timezone:'Asia/Taipei'},
+      '高雄':{lat:22.6273,lon:120.3014,timezone:'Asia/Taipei'},'桃園':{lat:24.9937,lon:121.3010,timezone:'Asia/Taipei'},
+      '新竹':{lat:24.8138,lon:120.9675,timezone:'Asia/Taipei'},'基隆':{lat:25.1276,lon:121.7392,timezone:'Asia/Taipei'},
+      '嘉義':{lat:23.4801,lon:120.4491,timezone:'Asia/Taipei'},
+      '紐約':{lat:40.7128,lon:-74.0060,timezone:'America/New_York'},'New York':{lat:40.7128,lon:-74.0060,timezone:'America/New_York'}
     };
+    let weatherRequestSeq=0;
+    function weatherCacheKey(prefix,city){return `${prefix}-${encodeURIComponent((tripConfig.country||'')+'|'+city)}`;}
+    function countryTokens(country=''){
+      const c=String(country).trim().toLowerCase(),map={
+        '台灣':['taiwan','台灣','臺灣','中華民國'],'臺灣':['taiwan','台灣','臺灣','中華民國'],'taiwan':['taiwan','台灣','臺灣'],
+        '日本':['japan','日本'],'japan':['japan','日本'],
+        '美國':['united states','usa','u.s.','美國'],'美利堅合眾國':['united states','usa','美國'],'usa':['united states','usa'],'united states':['united states','usa'],
+        '韓國':['south korea','republic of korea','韓國'],'南韓':['south korea','republic of korea','韓國']
+      };
+      return map[c]||[c].filter(Boolean);
+    }
     function weatherCodeText(code){
       const map={0:'晴朗',1:'大致晴朗',2:'局部多雲',3:'陰天',45:'有霧',48:'霧淞',51:'毛毛雨',53:'毛毛雨',55:'較強毛毛雨',61:'小雨',63:'中雨',65:'大雨',66:'凍雨',67:'強凍雨',71:'小雪',73:'中雪',75:'大雪',77:'霰',80:'陣雨',81:'較強陣雨',82:'強陣雨',85:'陣雪',86:'強陣雪',95:'雷雨',96:'雷雨伴冰雹',99:'強雷雨伴冰雹'};
       return map[code]||'天氣變化';
@@ -2204,13 +2271,22 @@
     }
     async function geocodeWeatherCity(city){
       if(weatherLocations[city])return weatherLocations[city];
-      const key='v15-weather-geo-'+city;
-      try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c?.lat)return c}catch(e){}
-      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=zh&format=json`;
-      const data=await fetch(url,{cache:'no-store'}).then(r=>r.json()),arr=data.results||[];
-      let x=arr[0];if(tripConfig.country)x=arr.find(v=>String(v.country||'').includes(tripConfig.country))||x;
-      if(!x)throw new Error('找不到城市');
-      const out={lat:x.latitude,lon:x.longitude,timezone:x.timezone||'auto'};weatherLocations[city]=out;localStorage.setItem(key,JSON.stringify(out));return out;
+      const key=weatherCacheKey('v16-weather-geo',city);
+      try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c?.lat&&c?.lon&&Date.now()-(c._savedAt||0)<30*86400000)return c}catch(e){}
+      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=10&language=zh&format=json`;
+      const data=await fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('geocode');return r.json()}),arr=data.results||[];
+      const tokens=countryTokens(tripConfig.country);
+      const norm=v=>String(v||'').toLowerCase().replace(/臺/g,'台').replace(/\s+/g,'');
+      const cityN=norm(city);
+      const scored=arr.map((v,i)=>{
+        const country=norm(v.country),name=norm(v.name),admin1=norm(v.admin1),admin2=norm(v.admin2);
+        let score=100-i;if(name===cityN)score+=80;else if(name.includes(cityN)||cityN.includes(name))score+=35;
+        if(admin1.includes(cityN)||admin2.includes(cityN))score+=25;
+        if(tokens.some(t=>country.includes(norm(t))))score+=120;
+        return {v,score};
+      }).sort((a,b)=>b.score-a.score);
+      const x=scored[0]?.v;if(!x)throw new Error('找不到城市');
+      const out={lat:x.latitude,lon:x.longitude,timezone:x.timezone||'auto',name:x.name||city,country:x.country||'',_savedAt:Date.now()};weatherLocations[city]=out;localStorage.setItem(key,JSON.stringify(out));return out;
     }
     function renderWeather(city,data,fromCache=false){
       const cur=data.current||{}, hourly=data.hourly||{};
@@ -2223,20 +2299,22 @@
       const temp=document.getElementById('weather-temp'),cond=document.getElementById('weather-condition'),detail=document.getElementById('weather-detail'),upd=document.getElementById('weather-updated');
       if(temp)temp.innerText=Number.isFinite(cur.temperature_2m)?`${Math.round(cur.temperature_2m)}°C`:'--°C';
       if(cond)cond.innerText=weatherCodeText(cur.weather_code);
-      if(detail)detail.innerText=`體感 ${Number.isFinite(cur.apparent_temperature)?Math.round(cur.apparent_temperature)+'°C':'--'}｜降雨機率 ${rain}%｜風速 ${Number.isFinite(cur.wind_speed_10m)?Math.round(cur.wind_speed_10m)+' km/h':'--'}`;
+      if(detail)detail.innerText=`體感 ${Number.isFinite(cur.apparent_temperature)?Math.round(cur.apparent_temperature)+'°C':'--'}｜降雨機率 ${rain}%｜濕度 ${Number.isFinite(cur.relative_humidity_2m)?Math.round(cur.relative_humidity_2m)+'%':'--'}｜風速 ${Number.isFinite(cur.wind_speed_10m)?Math.round(cur.wind_speed_10m)+' km/h':'--'}`;
       const stamp=new Date(data._savedAt||Date.now());
       if(upd)upd.innerText=`${fromCache?'離線顯示上次資料｜':''}更新 ${stamp.toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜Open-Meteo`;
     }
     async function updateWeatherDisplay(force=false){
-      const city=document.getElementById('weather-city')?.value||tripConfig.city||'東京',key='v15-weather-current-'+city,cached=localStorage.getItem(key);
-      if(cached&&!force){try{renderWeather(city,JSON.parse(cached),true)}catch(e){}}
-      const detail=document.getElementById('weather-detail');if(detail)detail.innerText='正在取得即時天氣資料…';
+      const city=document.getElementById('weather-city')?.value||tripConfig.city||'東京',key=weatherCacheKey('v16-weather-current',city),cached=localStorage.getItem(key),seq=++weatherRequestSeq;
+      if(cached&&!force){try{const c=JSON.parse(cached);if(Date.now()-(c._savedAt||0)<20*60*1000)renderWeather(city,c,true)}catch(e){}}
+      const detail=document.getElementById('weather-detail');if(detail)detail.innerText='正在更新即時天氣…';
       try{
-        const loc=await geocodeWeatherCity(city);
-        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&forecast_days=1&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
-        const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('weather');
-        const data=await res.json();data._savedAt=Date.now();localStorage.setItem(key,JSON.stringify(data));renderWeather(city,data,false);
-      }catch(e){if(cached){try{renderWeather(city,JSON.parse(cached),true)}catch(_){}}}
+        const loc=await geocodeWeatherCity(city);if(seq!==weatherRequestSeq)return;
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,rain,showers,weather_code,wind_speed_10m,wind_gusts_10m&hourly=precipitation_probability&forecast_days=1&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
+        const res=await fetch(url,{cache:'no-store',signal:controller.signal});clearTimeout(timer);if(!res.ok)throw new Error('weather');
+        const data=await res.json();if(seq!==weatherRequestSeq||document.getElementById('weather-city')?.value!==city)return;
+        data._savedAt=Date.now();data._location=loc;localStorage.setItem(key,JSON.stringify(data));renderWeather(city,data,false);
+      }catch(e){if(seq===weatherRequestSeq&&cached){try{renderWeather(city,JSON.parse(cached),true)}catch(_){}}}
     }
     function scheduleDayIso(day){
       const year=(tripConfig.startDate||String(new Date().getFullYear())).slice(0,4),md=String(day?.date||'').split('/');
@@ -2249,7 +2327,7 @@
     }
     async function updateDailyScheduleWeather(force=false){
       const box=document.getElementById('schedule-weather-card');if(!box)return;
-      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=`v15-daily-weather-${city}-${iso}`,cached=localStorage.getItem(key);
+      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=weatherCacheKey('v16-daily-weather',`${city}|${iso}`),cached=localStorage.getItem(key);
       document.getElementById('schedule-weather-city').textContent=city;
       document.getElementById('schedule-weather-date').textContent=`${iso?iso.replaceAll('-','/'):''} 行程天氣`;
       if(cached&&!force){
@@ -2258,10 +2336,10 @@
       try{
         const loc=await geocodeWeatherCity(city);
         const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=16&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
-        const d=await fetch(url,{cache:'no-store'}).then(r=>r.json()),idx=(d.daily?.time||[]).indexOf(iso);
+        const d=await fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('weather');return r.json()}),idx=(d.daily?.time||[]).indexOf(iso);
         let temp,detail;
         if(idx>=0){temp=`${Math.round(d.daily.temperature_2m_min[idx])}–${Math.round(d.daily.temperature_2m_max[idx])}°C`;detail=`${weatherCodeText(d.daily.weather_code[idx])}・降雨 ${d.daily.precipitation_probability_max[idx]??'--'}%`}
-        else{temp=`${Math.round(d.current?.temperature_2m??0)}°C`;detail=`${weatherCodeText(d.current?.weather_code)}・尚未進入行程日期預報範圍`}
+        else{temp='--°C';detail='行程日期尚未進入 16 天預報範圍'}
         document.getElementById('schedule-weather-temp').textContent=temp;document.getElementById('schedule-weather-detail').textContent=detail;
         localStorage.setItem(key,JSON.stringify({temp,detail,at:Date.now()}));
       }catch(e){
@@ -2395,6 +2473,8 @@
     }
 
     document.addEventListener('DOMContentLoaded',()=>{renderBookingsForTrip();initBookingPdfUpload();applyTripConfigUI();applyCurrencyUI();populateWeatherCities();updateWeatherDisplay(false);setTimeout(()=>{migrateLegacyMediaToIndexedDB();updateDailyScheduleWeather(false);},400);});
+    setInterval(()=>{if(document.visibilityState!=='visible'||tripTransitioning)return;if(activeTab==='tools')updateWeatherDisplay(true);if(activeTab==='schedule')updateDailyScheduleWeather(true);},5*60*1000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!tripTransitioning){if(activeTab==='tools')updateWeatherDisplay(true);if(activeTab==='schedule')updateDailyScheduleWeather(false);}});
 
     const defaultCoupons = [
       {name:"松本清",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_01.webp"},
@@ -2895,11 +2975,13 @@
       const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate};
       const f=document.getElementById('new-trip-cover')?.files?.[0];if(f){try{cfg.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover')}catch(e){}}
       const t={id,title,city,country,startDate:start,endDate:end,cover:cfg.cover,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate,useTokyoSeed:false,snapshot:createBlankTripSnapshot(cfg)};
-      tripManagerState.trips.push(t);tripManagerState.activeId=id;saveTripManagerState();restoreTripSnapshot(t);location.reload();
+      tripTransitioning=true;showTripSwitchOverlay(`正在建立「${title}」…`);tripManagerState.trips.push(t);restoreTripSnapshot(t);tripManagerState.activeId=id;saveTripManagerState();location.reload();
     }
     function switchManagedTrip(id){
       if(id===tripManagerState.activeId){closeTripManager();return}
-      persistActiveTripSnapshot();const t=tripManagerState.trips.find(x=>x.id===id);if(!t)return;tripManagerState.activeId=id;saveTripManagerState();restoreTripSnapshot(t);location.reload();
+      const t=tripManagerState.trips.find(x=>x.id===id);if(!t||tripTransitioning)return;
+      persistActiveTripSnapshot();tripTransitioning=true;showTripSwitchOverlay(`正在切換到「${t.title||'旅程'}」…`);
+      restoreTripSnapshot(t);tripManagerState.activeId=id;saveTripManagerState();location.reload();
     }
     function editManagedTrip(id){
       const t=tripManagerState.trips.find(x=>x.id===id);if(!t)return;
@@ -2910,7 +2992,7 @@
       if(tripManagerState.trips.length<=1)return;
       const t=tripManagerState.trips.find(x=>x.id===id);if(!t||!confirm(`確定刪除「${t.title}」？本裝置上的該旅程資料將移除。`))return;
       const wasActive=id===tripManagerState.activeId;tripManagerState.trips=tripManagerState.trips.filter(x=>x.id!==id);
-      if(wasActive){const n=tripManagerState.trips[0];tripManagerState.activeId=n.id;saveTripManagerState();restoreTripSnapshot(n);location.reload()}else{saveTripManagerState();renderTripManagerList()}
+      if(wasActive){const n=tripManagerState.trips[0];tripTransitioning=true;showTripSwitchOverlay(`正在切換到「${n.title||'旅程'}」…`);restoreTripSnapshot(n);tripManagerState.activeId=n.id;saveTripManagerState();location.reload()}else{saveTripManagerState();renderTripManagerList()}
     }
 
     function openTripSettings(){
@@ -2967,7 +3049,7 @@
     function confirmBatchImport(mode){const good=batchImportRows.filter(x=>x.date&&x.time&&x.title);if(!good.length)return alert('沒有可匯入資料');if(mode==='replace'&&!confirm('確定以匯入內容取代目前所有行程？'))return;let newDays=mode==='replace'?[]:daysData;for(const r of good){const md=r.date.slice(5).replace('-','/');let day=newDays.find(d=>d.date===md);if(!day){day=isoMeta(r.date,newDays.length);newDays.push(day)}day.items.push({id:'item-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),time:r.time,title:r.title,type:'',tagClass:'',group:'',address:r.address||r.title,city:r.city||tripConfig.city,note:r.note,intro:r.intro,website:r.website,reservationUrl:r.reservationUrl,wiki:r.title,image:''})}newDays.sort((a,b)=>mdToIso(a.date).localeCompare(mdToIso(b.date)));newDays.forEach((d,i)=>{d.day=`Day ${i+1}`;d.w=['日','一','二','三','四','五','六'][new Date(mdToIso(d.date)+'T12:00:00').getDay()];d.items.sort((a,b)=>String(a.time).localeCompare(String(b.time)))});daysData=newDays;saveDays();const dates=good.map(x=>x.date).sort();tripConfig.startDate=dates[0];tripConfig.endDate=dates[dates.length-1];saveTripConfig();persistActiveTripSnapshot();currentDayIndex=0;currentGroup='';renderDatePicker();renderTimeline(0);closeGlobalModal();populateWeatherCities();updateDailyScheduleWeather(true);alert(`已匯入 ${good.length} 筆行程。Google Maps、城市天氣與景點圖片會依資料自動產生。`)}
     function downloadBatchSample(){const csv='\ufeff日期,時間,行程名稱,地址,城市,簡介,備註,網址,預約網址\r\n';downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'TripBook_行程批次匯入空白Sample.csv')}
 
-    window.addEventListener('beforeunload',()=>{try{persistActiveTripSnapshot()}catch(e){}});
+    window.addEventListener('beforeunload',()=>{if(tripTransitioning)return;try{persistActiveTripSnapshot()}catch(e){}});
 
     async function resetPhoneContent(){
       const t=activeTripMeta();
