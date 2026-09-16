@@ -327,6 +327,11 @@
     .mobile-form-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
     .mobile-form-grid > *{min-width:0;}
     @media (min-width:390px){.mobile-form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    .flight-route-grid{display:grid;grid-template-columns:minmax(70px,1fr) minmax(84px,1.15fr) minmax(70px,1fr);gap:8px;align-items:center;}
+    .flight-airport-code{font-size:20px;line-height:1.2;font-weight:700;color:#4A3E3D;white-space:nowrap;}
+    .flight-airport-name{font-size:11px;line-height:1.35;color:#9CA3AF;min-height:30px;display:flex;align-items:center;justify-content:center;text-align:center;word-break:break-word;}
+    .flight-time{font-size:14px;line-height:1.25;font-weight:700;color:#E05244;margin-top:2px;}
+    @media (max-width:360px){.flight-route-grid{grid-template-columns:minmax(64px,1fr) minmax(70px,.9fr) minmax(64px,1fr);gap:5px}.flight-airport-code{font-size:18px}.flight-airport-name{font-size:10px}}
 
   </style>
 </head>
@@ -356,10 +361,11 @@
   <!-- ================= 2. 頂部 Header ================= -->
   <header id="app-header" class="p-4 sticky top-0 z-30 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-sand">
     <div class="flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <span id="trip-emoji" class="text-2xl">🍁</span>
-        <h1 id="trip-header-title" class="text-xl font-bold text-wood tracking-wide">東京手帳 2026</h1>
-      </div>
+      <button type="button" onclick="openHeaderTripMenu()" class="flex items-center gap-2 min-w-0 text-left btn-press" title="切換旅程或回到封面" aria-label="切換旅程或回到封面">
+        <span id="trip-emoji" class="text-2xl shrink-0">🍁</span>
+        <h1 id="trip-header-title" class="text-xl font-bold text-wood tracking-wide truncate">東京手帳 2026</h1>
+        <i class="fa-solid fa-chevron-down text-[9px] text-gray-400 shrink-0"></i>
+      </button>
       <div class="flex items-center gap-2">
         <a id="header-manual-icon" href="https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link" target="_blank" rel="noopener" class="header-icon-btn btn-press text-amber-500" title="旅遊手冊 PDF" aria-label="旅遊手冊 PDF"><i class="fa-solid fa-book-open"></i></a>
         <button id="header-map-icon" type="button" onclick="openTripMapModal()" class="header-icon-btn btn-press text-skyBlue" title="旅遊景點地圖" aria-label="旅遊景點地圖"><i class="fa-solid fa-earth-asia"></i></button>
@@ -1122,6 +1128,23 @@
     }
 
     function startApp() { document.getElementById('splash-screen').classList.add('hide'); }
+    function returnToSplash(){
+      try{persistActiveTripSnapshot()}catch(e){}
+      closeGlobalModal();
+      const splash=document.getElementById('splash-screen');if(splash){splash.classList.remove('hide');window.scrollTo({top:0,behavior:'smooth'});}
+    }
+    function openHeaderTripMenu(){
+      try{persistActiveTripSnapshot()}catch(e){}
+      const title=document.getElementById('modal-title'),body=document.getElementById('modal-form-body');
+      title.innerHTML='<span><i class="fa-solid fa-route text-skyBlue mr-2"></i>旅程切換</span>';
+      const rows=(tripManagerState.trips||[]).map(t=>{const active=t.id===tripManagerState.activeId;return `<button type="button" onclick="switchManagedTripFromHeader('${t.id}')" class="w-full p-3 rounded-2xl border text-left btn-press ${active?'border-skyBlue bg-skyLight':'border-sand bg-card'}"><div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-bold text-wood truncate">${escapeHtml(t.title||'我的旅行')}</div><div class="text-[10px] text-gray-400 mt-1">${String(t.startDate||'').replaceAll('-','/')}–${String(t.endDate||'').replaceAll('-','/')}${t.city?'・'+escapeHtml(t.city):''}</div></div>${active?'<span class="text-[10px] text-skyBlue font-bold shrink-0">目前</span>':'<i class="fa-solid fa-chevron-right text-gray-300 shrink-0"></i>'}</div></button>`}).join('');
+      body.innerHTML=`<button type="button" onclick="returnToSplash()" class="w-full py-3 rounded-xl bg-paper border border-sand text-wood font-bold btn-press"><i class="fa-solid fa-house mr-2 text-torii"></i>回到封面頁</button><div class="space-y-2">${rows}</div><button type="button" onclick="closeGlobalModal();openTripManager()" class="w-full py-2.5 rounded-xl bg-skyLight text-skyBlue font-bold btn-press"><i class="fa-solid fa-suitcase-rolling mr-2"></i>管理／新增旅程</button>`;
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+    function switchManagedTripFromHeader(id){
+      if(id===tripManagerState.activeId){closeGlobalModal();return;}
+      closeGlobalModal();switchManagedTrip(id);
+    }
     function toggleElement(id) { const el=document.getElementById(id); if(el) el.classList.toggle('hidden'); }
     function toggleExclusivePanel(id, selector) {
       const el=document.getElementById(id); if(!el)return;
@@ -1147,8 +1170,8 @@
       activeTab = tabName;
       requestAnimationFrame(syncStickyHeaderHeight);
       if(tabName==='expense') setTimeout(()=>warmReceiptOCR(),120);
-      if(tabName==='schedule') setTimeout(()=>updateDailyScheduleWeather(false),80);
-      if(tabName==='tools') setTimeout(()=>updateWeatherDisplay(true),80);
+      if(tabName==='schedule') setTimeout(()=>updateDailyScheduleWeather(true),80);
+      if(tabName==='tools') setTimeout(()=>{syncWeatherToolToScheduleLocation();updateWeatherDisplay(true)},80);
       document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
       document.getElementById(`page-${tabName}`).classList.add('active');
       
@@ -1262,7 +1285,7 @@
     }
 
     function renderTimeline(index=currentDayIndex){
-      currentDayIndex=index; renderDatePicker(); renderGroupPicker(); updateDailyScheduleWeather(false);
+      currentDayIndex=index; renderDatePicker(); renderGroupPicker(); updateDailyScheduleWeather(true);
       const container=document.getElementById('timeline-container');
       container.innerHTML='';
       const items=visibleItems(index).slice().sort((a,b)=>a.time.localeCompare(b.time));
@@ -1412,7 +1435,7 @@
       const safe=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       body.innerHTML=`
         <input id="edit-sch-title" value="${safe(item.title)}" placeholder="景點名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-        <div><div class="text-[10px] text-gray-400 mb-1">時間</div><input id="edit-sch-time" type="time" value="${item.time||'09:00'}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
+        <div class="mobile-form-grid two"><div><div class="text-[10px] text-gray-400 mb-1">時間</div><input id="edit-sch-time" type="time" value="${item.time||'09:00'}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><div class="text-[10px] text-gray-400 mb-1">城市／地區（天氣用）</div><input id="edit-sch-city" value="${safe(item.city||'')}" placeholder="例如台南／紐約／河口湖" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
         <div>
           <div class="text-[10px] text-gray-400 mb-1">Google Maps 搜尋／地址</div>
           <div class="flex gap-2"><input id="edit-sch-address" value="${safe(item.address||item.title)}" placeholder="店名或地址" class="min-w-0 flex-1 p-2.5 bg-paper rounded-xl border border-sand"><a id="edit-sch-map" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address||item.title)}" target="_blank" class="px-3 py-2.5 rounded-xl bg-skyLight text-skyBlue font-bold"><i class="fa-solid fa-map-location-dot"></i></a></div>
@@ -1451,6 +1474,7 @@
       }
       item.title=title; item.time=time;
       item.address=document.getElementById('edit-sch-address')?.value?.trim()||title;
+      item.city=document.getElementById('edit-sch-city')?.value?.trim()||'';
       item.intro=document.getElementById('edit-sch-intro')?.value?.trim()||'';
       item.note=document.getElementById('edit-sch-note')?.value?.trim()||'';
       item.image=image;
@@ -1463,24 +1487,69 @@
     let bookingItems=(()=>{try{return JSON.parse(localStorage.getItem('tripbook-v15-bookings')||'[]')}catch(e){return[]}})();
     function saveBookingItems(){localStorage.setItem('tripbook-v15-bookings',JSON.stringify(bookingItems));persistActiveTripSnapshot();}
     function bookingVoucherCard(){return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex items-center justify-between gap-3"><div><div class="text-xs font-bold text-wood"><i class="fa-solid fa-folder-open text-torii mr-1"></i>旅遊憑證（PDF／圖片）</div><div class="text-[9px] text-gray-400 mt-1">可將機票、住宿、門票等 PDF 或圖片憑證儲存在此裝置。</div></div><label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap"><i class="fa-solid fa-upload mr-1"></i>上傳憑證<input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden"></label></div><div id="booking-pdf-list" class="space-y-2 mt-3"></div></div>`;}
+    function formatBookingDate(date){
+      if(!date)return '';
+      const d=new Date(date+'T12:00:00');if(Number.isNaN(d.getTime()))return escapeHtml(date);
+      return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (${'日一二三四五六'[d.getDay()]})`;
+    }
+    function bookingFlightCard(x){
+      const fromCode=(x.fromCode||x.from||'DEP').toUpperCase(),toCode=(x.toCode||x.to||'ARR').toUpperCase();
+      const fromName=x.fromName||x.from||'出發機場',toName=x.toName||x.to||'抵達機場';
+      const route=x.routeType||'直飛',label=x.label?` (${escapeHtml(x.label)})`:'';
+      return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand relative">
+        <div class="flex justify-between items-start gap-2 border-b border-dashed border-gray-200 pb-2 mb-3">
+          <div class="text-xs font-bold text-skyBlue min-w-0 break-words"><i class="fa-solid fa-plane-departure mr-1"></i>${escapeHtml(x.airline||'航班')} ${escapeHtml(x.flightNo||'')}${label}</div>
+          <div class="flex items-center gap-2 shrink-0"><span class="text-[10px] bg-skyLight text-skyBlue px-2 py-1 rounded-md font-bold">${formatBookingDate(x.date)}</span><button type="button" onclick="event.stopPropagation();openBookingEditor('flight','${x.id}')" class="text-skyBlue p-1" title="編輯"><i class="fa-solid fa-pen-to-square"></i></button><button type="button" onclick="event.stopPropagation();deleteBookingItem('${x.id}')" class="text-red-300 p-1" title="刪除"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
+        <div class="flight-route-grid">
+          <div class="text-center min-w-0"><div class="flight-airport-code">${escapeHtml(fromCode)}</div><div class="flight-airport-name">${escapeHtml(fromName)}</div><div class="flight-time">${escapeHtml(x.departTime||'--:--')}</div></div>
+          <div class="text-center min-w-0"><div class="text-[10px] text-gray-400 mb-1">${escapeHtml(route)}</div><div class="h-0.5 bg-sand relative"><i class="fa-solid fa-plane text-skyBlue text-xs absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i></div><div class="text-[9px] text-gray-400 mt-2">${x.note?'航班備註':'點編輯輸入備註'}</div></div>
+          <div class="text-center min-w-0"><div class="flight-airport-code">${escapeHtml(toCode)}</div><div class="flight-airport-name">${escapeHtml(toName)}</div><div class="flight-time">${escapeHtml(x.arriveTime||'--:--')}</div></div>
+        </div>
+        ${x.note?`<div class="mt-3 pt-3 border-t border-dashed text-[10px] text-gray-500 break-words"><i class="fa-regular fa-note-sticky mr-1 text-skyBlue"></i>${escapeHtml(x.note)}</div>`:''}
+      </div>`;
+    }
+    function bookingHotelCard(x){return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex justify-between items-start gap-2"><div class="flex gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-sakuraLight flex items-center justify-center text-torii shrink-0"><i class="fa-solid fa-house"></i></div><div class="min-w-0"><div class="font-bold text-wood text-sm">${escapeHtml(x.name||'住宿')}</div><div class="text-[10px] text-skyBlue font-bold mt-1">${escapeHtml(x.checkin||'')} ${x.checkout?'– '+escapeHtml(x.checkout):''}</div><div class="text-[10px] text-gray-500 mt-1 break-words">${escapeHtml(x.address||'')}</div>${x.note?`<div class="text-[10px] text-gray-400 mt-1">${escapeHtml(x.note)}</div>`:''}</div></div><div class="flex gap-1 shrink-0"><button type="button" onclick="openBookingEditor('hotel','${x.id}')" class="text-skyBlue p-1"><i class="fa-solid fa-pen-to-square"></i></button><button type="button" onclick="deleteBookingItem('${x.id}')" class="text-red-300 p-1"><i class="fa-solid fa-trash"></i></button></div></div></div>`;}
     function renderBookingsForTrip(){
       if(shouldUseTokyoSeed())return;
       const box=document.getElementById('bookings-list');if(!box)return;
-      const cards=bookingItems.map(x=>x.type==='flight'?`<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex justify-between items-start gap-2 border-b border-dashed border-gray-200 pb-2 mb-3"><div class="font-bold text-skyBlue text-xs min-w-0"><i class="fa-solid fa-plane mr-1"></i>${escapeHtml(x.airline||'航班')} ${escapeHtml(x.flightNo||'')}</div><button onclick="deleteBookingItem('${x.id}')" class="text-red-300 shrink-0"><i class="fa-solid fa-trash"></i></button></div><div class="mobile-form-grid two"><div><div class="font-bold text-wood">${escapeHtml(x.from||'出發地')} → ${escapeHtml(x.to||'目的地')}</div><div class="text-[10px] text-gray-400 mt-1">${escapeHtml(x.date||'')} ${escapeHtml(x.departTime||'')}${x.arriveTime?' – '+escapeHtml(x.arriveTime):''}</div></div><div class="text-[10px] text-gray-500">${escapeHtml(x.note||'')}</div></div></div>`:`<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex justify-between items-start gap-2"><div class="flex gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-sakuraLight flex items-center justify-center text-torii shrink-0"><i class="fa-solid fa-house"></i></div><div class="min-w-0"><div class="font-bold text-wood text-sm">${escapeHtml(x.name||'住宿')}</div><div class="text-[10px] text-skyBlue font-bold mt-1">${escapeHtml(x.checkin||'')} ${x.checkout?'– '+escapeHtml(x.checkout):''}</div><div class="text-[10px] text-gray-500 mt-1 break-words">${escapeHtml(x.address||'')}</div>${x.note?`<div class="text-[10px] text-gray-400 mt-1">${escapeHtml(x.note)}</div>`:''}</div></div><button onclick="deleteBookingItem('${x.id}')" class="text-red-300 shrink-0"><i class="fa-solid fa-trash"></i></button></div></div>`).join('');
+      const cards=bookingItems.map(x=>x.type==='flight'?bookingFlightCard(x):bookingHotelCard(x)).join('');
       box.innerHTML=bookingVoucherCard()+`<div class="grid grid-cols-2 gap-2"><button onclick="openBookingEditor('flight')" class="py-3 rounded-xl bg-skyLight text-skyBlue font-bold text-xs btn-press"><i class="fa-solid fa-plane-departure mr-1"></i>新增航班</button><button onclick="openBookingEditor('hotel')" class="py-3 rounded-xl bg-sakuraLight text-torii font-bold text-xs btn-press"><i class="fa-solid fa-hotel mr-1"></i>新增住宿</button></div>`+(cards||'<div class="text-center text-gray-400 text-xs py-8">尚未填寫航班或住宿，請自行新增。</div>');
       renderBookingPdfs();
     }
-    function openBookingEditor(type){
-      document.getElementById('modal-title').innerText=type==='flight'?'新增航班':'新增住宿';
-      document.getElementById('modal-form-body').innerHTML=type==='flight'?`<div class="mobile-form-grid two"><input id="bk-airline" placeholder="航空公司" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="bk-flightno" placeholder="航班號碼" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div class="mobile-form-grid two"><input id="bk-from" placeholder="出發機場／城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="bk-to" placeholder="抵達機場／城市" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><input id="bk-date" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">起飛</label><input id="bk-depart" type="time" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">抵達</label><input id="bk-arrive" type="time" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div><textarea id="bk-note" placeholder="航廈、座位、行李或其他備註" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20"></textarea><button onclick="submitBookingItem('flight')" class="w-full py-2.5 bg-skyBlue text-white rounded-xl font-bold">儲存航班</button>`:`<input id="bk-name" placeholder="飯店／住宿名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">入住</label><input id="bk-checkin" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">退房</label><input id="bk-checkout" type="date" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div><input id="bk-address" placeholder="地址（選填）" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><textarea id="bk-note" placeholder="訂房編號、早餐、入住提醒等" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20"></textarea><button onclick="submitBookingItem('hotel')" class="w-full py-2.5 bg-torii text-white rounded-xl font-bold">儲存住宿</button>`;
+    function openBookingEditor(type,id=''){
+      const item=id?bookingItems.find(x=>String(x.id)===String(id)):null,edit=!!item;
+      document.getElementById('modal-title').innerText=edit?(type==='flight'?'編輯航班':'編輯住宿'):(type==='flight'?'新增航班':'新增住宿');
+      if(type==='flight'){
+        const v=k=>escapeHtml(item?.[k]||'');
+        document.getElementById('modal-form-body').innerHTML=`
+          <div class="mobile-form-grid two"><input id="bk-airline" value="${v('airline')}" placeholder="航空公司，例如中華航空" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><input id="bk-flightno" value="${v('flightNo')}" placeholder="航班號碼，例如 CI100" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
+          <div class="mobile-form-grid two"><input id="bk-label" value="${v('label')}" placeholder="航程標籤，例如去程／回程" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div><label class="block text-[10px] text-gray-400 mb-1">航班日期</label><input id="bk-date" type="date" value="${v('date')}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
+          <div class="p-3 rounded-2xl bg-skyLight/50 border border-skyBlue/20 space-y-2"><div class="font-bold text-xs text-skyBlue"><i class="fa-solid fa-plane-departure mr-1"></i>出發</div><div class="mobile-form-grid two"><input id="bk-from-code" value="${escapeHtml(item?.fromCode||item?.from||'')}" maxlength="6" placeholder="機場代碼，例如 TPE" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"><input id="bk-from-name" value="${escapeHtml(item?.fromName||item?.from||'')}" placeholder="機場／航廈，例如桃園機場 T2" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">起飛時間</label><input id="bk-depart" type="time" value="${v('departTime')}" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div></div>
+          <div class="p-3 rounded-2xl bg-sakuraLight/50 border border-sakura/30 space-y-2"><div class="font-bold text-xs text-torii"><i class="fa-solid fa-plane-arrival mr-1"></i>抵達</div><div class="mobile-form-grid two"><input id="bk-to-code" value="${escapeHtml(item?.toCode||item?.to||'')}" maxlength="6" placeholder="機場代碼，例如 NRT" class="w-full p-2.5 bg-card rounded-xl border border-sand uppercase"><input id="bk-to-name" value="${escapeHtml(item?.toName||item?.to||'')}" placeholder="機場／航廈，例如成田機場 T2" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">抵達時間</label><input id="bk-arrive" type="time" value="${v('arriveTime')}" class="w-full p-2.5 bg-card rounded-xl border border-sand"></div></div>
+          <div class="mobile-form-grid two"><input id="bk-route" value="${escapeHtml(item?.routeType||'直飛')}" placeholder="航程，例如直飛／轉機" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><textarea id="bk-note" placeholder="座位、行李、訂位代號或其他備註" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20">${v('note')}</textarea></div>
+          <button onclick="submitBookingItem('flight','${id}')" class="w-full py-2.5 bg-skyBlue text-white rounded-xl font-bold">${edit?'儲存修改':'儲存航班'}</button>`;
+      }else{
+        const v=k=>escapeHtml(item?.[k]||'');
+        document.getElementById('modal-form-body').innerHTML=`<input id="bk-name" value="${v('name')}" placeholder="飯店／住宿名稱 *" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">入住</label><input id="bk-checkin" type="date" value="${v('checkin')}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div><div><label class="block text-[10px] text-gray-400 mb-1">退房</label><input id="bk-checkout" type="date" value="${v('checkout')}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div><input id="bk-address" value="${v('address')}" placeholder="地址（選填）" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><textarea id="bk-note" placeholder="訂房編號、早餐、入住提醒等" class="w-full p-2.5 bg-paper rounded-xl border border-sand h-20">${v('note')}</textarea><button onclick="submitBookingItem('hotel','${id}')" class="w-full py-2.5 bg-torii text-white rounded-xl font-bold">${edit?'儲存修改':'儲存住宿'}</button>`;
+      }
       document.getElementById('global-modal').classList.remove('hidden');
     }
-    function submitBookingItem(type){
-      if(type==='flight'){const from=document.getElementById('bk-from').value.trim(),to=document.getElementById('bk-to').value.trim();if(!from||!to)return alert('請填寫出發地與目的地');bookingItems.push({id:'bk-'+Date.now(),type,airline:document.getElementById('bk-airline').value.trim(),flightNo:document.getElementById('bk-flightno').value.trim(),from,to,date:document.getElementById('bk-date').value,departTime:document.getElementById('bk-depart').value,arriveTime:document.getElementById('bk-arrive').value,note:document.getElementById('bk-note').value.trim()});}
-      else{const name=document.getElementById('bk-name').value.trim();if(!name)return alert('請填寫住宿名稱');bookingItems.push({id:'bk-'+Date.now(),type,name,checkin:document.getElementById('bk-checkin').value,checkout:document.getElementById('bk-checkout').value,address:document.getElementById('bk-address').value.trim(),note:document.getElementById('bk-note').value.trim()});}
+    function submitBookingItem(type,id=''){
+      const existing=id?bookingItems.find(x=>String(x.id)===String(id)):null;
+      if(type==='flight'){
+        const fromCode=document.getElementById('bk-from-code').value.trim().toUpperCase(),toCode=document.getElementById('bk-to-code').value.trim().toUpperCase(),fromName=document.getElementById('bk-from-name').value.trim(),toName=document.getElementById('bk-to-name').value.trim();
+        if(!fromCode||!toCode)return alert('請填寫出發與抵達機場代碼');
+        const obj={id:existing?.id||'bk-'+Date.now(),type,airline:document.getElementById('bk-airline').value.trim(),flightNo:document.getElementById('bk-flightno').value.trim(),label:document.getElementById('bk-label').value.trim(),fromCode,toCode,fromName:fromName||fromCode,toName:toName||toCode,from:fromCode,to:toCode,date:document.getElementById('bk-date').value,departTime:document.getElementById('bk-depart').value,arriveTime:document.getElementById('bk-arrive').value,routeType:document.getElementById('bk-route').value.trim()||'直飛',note:document.getElementById('bk-note').value.trim()};
+        if(existing)Object.assign(existing,obj);else bookingItems.push(obj);
+      }else{
+        const name=document.getElementById('bk-name').value.trim();if(!name)return alert('請填寫住宿名稱');
+        const obj={id:existing?.id||'bk-'+Date.now(),type,name,checkin:document.getElementById('bk-checkin').value,checkout:document.getElementById('bk-checkout').value,address:document.getElementById('bk-address').value.trim(),note:document.getElementById('bk-note').value.trim()};
+        if(existing)Object.assign(existing,obj);else bookingItems.push(obj);
+      }
       saveBookingItems();closeGlobalModal();renderBookingsForTrip();initBookingPdfUpload();
     }
-    function deleteBookingItem(id){if(!confirm('確定刪除這筆航程／住宿資料？'))return;bookingItems=bookingItems.filter(x=>x.id!==id);saveBookingItems();renderBookingsForTrip();initBookingPdfUpload();}
+    function deleteBookingItem(id){if(!confirm('確定刪除這筆航程／住宿資料？'))return;bookingItems=bookingItems.filter(x=>String(x.id)!==String(id));saveBookingItems();renderBookingsForTrip();initBookingPdfUpload();}
 
     // ---------------- 記帳：照片保存、點擊展開、可編輯 OCR 金額 ----------------
     let expenses = (()=>{try{const s=localStorage.getItem('tokyo-expenses-v2');return s?JSON.parse(s):[
@@ -1549,6 +1618,9 @@
       const m=raw.match(/(?:\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})\s*(.*)$/);
       return (m?.[1]||raw||'').trim();
     }
+    function localDateInputValue(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    function localTimeHHMM(d=new Date()){return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+    function expenseDateInputValue(item){const m=String(item?.time||'').match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);return m?`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`:localDateInputValue();}
 
     function toggleExpenseDateGroup(key){
       const body=[...document.querySelectorAll('[data-expense-day-body]')].find(el=>el.dataset.expenseDayBody===key);
@@ -1680,11 +1752,12 @@
       const item=expenses.find(x=>x.id===id);if(!item)return;
       document.getElementById('modal-title').innerText='編輯支出';document.getElementById('modal-form-body').innerHTML=`
         <input id="edit-exp-note" value="${item.note}" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+        <div><label class="block text-[10px] text-gray-400 mb-1">消費日期</label><input type="date" id="edit-exp-date" value="${expenseDateInputValue(item)}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
         <div class="mobile-form-grid two"><input type="number" id="edit-exp-amount" value="${item.amount}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><select id="edit-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand">${expenseCurrencyOptions(item.currency)}</select></div>
         <div class="grid grid-cols-2 gap-2"><select id="edit-exp-pay" class="w-full p-2 bg-paper rounded-xl border border-sand">${['現金','信用卡','交通卡'].map(x=>`<option ${item.payMethod===x?'selected':''}>${x}</option>`).join('')}</select><select id="edit-exp-cat" class="w-full p-2 bg-paper rounded-xl border border-sand">${['餐飲','交通','購物','票券','伴手禮','其他'].map(x=>`<option ${item.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
         ${item.receiptImage?mediaImgTag(item.receiptImage,'receipt-preview','收據照片'):''}<button onclick="saveExpenseEdit(${id})" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl">儲存修改</button>`;document.getElementById('global-modal').classList.remove('hidden');hydrateMediaImages(document.getElementById('modal-form-body'));
     }
-    function saveExpenseEdit(id){const item=expenses.find(x=>x.id===id);if(!item)return;item.note=document.getElementById('edit-exp-note').value;item.amount=Number(document.getElementById('edit-exp-amount').value)||0;item.currency=document.getElementById('edit-exp-curr').value;item.payMethod=document.getElementById('edit-exp-pay').value;item.category=document.getElementById('edit-exp-cat').value;saveExpenses();renderExpenses();closeGlobalModal();}
+    function saveExpenseEdit(id){const item=expenses.find(x=>x.id===id);if(!item)return;item.note=document.getElementById('edit-exp-note').value;item.amount=Number(document.getElementById('edit-exp-amount').value)||0;item.currency=document.getElementById('edit-exp-curr').value;item.payMethod=document.getElementById('edit-exp-pay').value;item.category=document.getElementById('edit-exp-cat').value;const date=document.getElementById('edit-exp-date')?.value||localDateInputValue(),oldTime=expenseTimeOnly(item)||localTimeHHMM();item.time=`${date.replaceAll('-','/')} ${oldTime}`;saveExpenses();renderExpenses();closeGlobalModal();}
     async function deleteExpense(id){if(confirm('確定刪除此筆支出嗎？')){const item=expenses.find(e=>e.id===id);if(item?.receiptImage)await deleteMediaRef(item.receiptImage);expenses=expenses.filter(e=>e.id!==id);saveExpenses();renderExpenses();}}
     renderExpenses();
 
@@ -2244,6 +2317,7 @@
       '紐約':{lat:40.7128,lon:-74.0060,timezone:'America/New_York'},'New York':{lat:40.7128,lon:-74.0060,timezone:'America/New_York'}
     };
     let weatherRequestSeq=0;
+    let dailyWeatherRequestSeq=0;
     function weatherCacheKey(prefix,city){return `${prefix}-${encodeURIComponent((tripConfig.country||'')+'|'+city)}`;}
     function countryTokens(country=''){
       const c=String(country).trim().toLowerCase(),map={
@@ -2320,32 +2394,49 @@
       const year=(tripConfig.startDate||String(new Date().getFullYear())).slice(0,4),md=String(day?.date||'').split('/');
       return md.length===2?`${year}-${md[0].padStart(2,'0')}-${md[1].padStart(2,'0')}`:'';
     }
-    function currentScheduleCity(){
-      const day=daysData?.[currentDayIndex],counts={};
-      (day?.items||[]).forEach(x=>{const c=x.city||'';if(c)counts[c]=(counts[c]||0)+1});
-      return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||tripConfig.city||'東京';
+    const scheduleWeatherRules=[
+      {city:'台南',re:/台南|臺南|Tainan/i},{city:'高雄',re:/高雄|Kaohsiung/i},{city:'台中',re:/台中|臺中|Taichung/i},{city:'台北',re:/台北|臺北|Taipei|士林|北投|信義區|西門町|中正紀念堂|101/i},{city:'新竹',re:/新竹|Hsinchu/i},{city:'桃園',re:/桃園|Taoyuan/i},{city:'嘉義',re:/嘉義|Chiayi/i},
+      {city:'河口湖',weight:70,re:/河口湖|富士河口湖|Kawaguchiko|Fujikawaguchiko|大石公園|新倉山淺間|富士急/i},
+      {city:'千葉',weight:75,re:/千葉|舞濱|舞浜|浦安|新浦安|成田|Narita|Tokyo Disney|Disneyland|DisneySea|迪士尼/i},
+      {city:'東京',re:/東京|Tokyo|新宿|澀谷|渋谷|淺草|浅草|上野|池袋|秋葉原|銀座|台場|豊洲|豐洲|六本木|原宿|羽田|東京車站|Skytree|Shinjuku|Shibuya|Asakusa|Ueno|Akihabara|Ginza|Odaiba/i},
+      {city:'大阪',re:/大阪|Osaka|梅田|難波|心齋橋|道頓堀/i},{city:'京都',re:/京都|Kyoto|清水寺|嵐山|伏見稻荷/i},{city:'名古屋',re:/名古屋|Nagoya/i},{city:'奈良',re:/奈良|Nara/i},{city:'福岡',re:/福岡|Fukuoka|博多|Hakata/i},{city:'札幌',re:/札幌|Sapporo/i},{city:'那霸',re:/那霸|那覇|Naha|沖繩|沖縄|Okinawa/i},
+      {city:'紐約',re:/紐約|纽约|New York|Manhattan|Brooklyn|Queens|Times Square|Central Park/i},{city:'洛杉磯',re:/洛杉磯|Los Angeles|Hollywood|Anaheim/i},{city:'舊金山',re:/舊金山|San Francisco/i}
+    ];
+    function inferScheduleWeatherTarget(day=daysData?.[currentDayIndex]){
+      const scores=new Map(),add=(city,pts)=>{if(city)scores.set(city,(scores.get(city)||0)+pts)};
+      const dayItems=(day===daysData?.[currentDayIndex]&&typeof visibleItems==='function'?visibleItems(currentDayIndex):(day?.items||[]));
+      dayItems.forEach((x,idx)=>{
+        if(x.city)add(String(x.city).trim(),120-(idx*2));
+        const text=[x.title,x.address].filter(Boolean).join(' ');
+        scheduleWeatherRules.forEach(r=>{if(r.re.test(text))add(r.city,(r.weight||50)-(idx*0.5))});
+      });
+      if(scores.size)return [...scores.entries()].sort((a,b)=>b[1]-a[1])[0][0];
+      return tripConfig.city||'東京';
+    }
+    function currentScheduleCity(){return inferScheduleWeatherTarget(daysData?.[currentDayIndex]);}
+    function syncWeatherToolToScheduleLocation(){
+      const sel=document.getElementById('weather-city'),city=currentScheduleCity();if(!sel||!city)return;
+      if(![...sel.options].some(o=>o.value===city)){const o=document.createElement('option');o.value=city;o.textContent=city;sel.prepend(o)}sel.value=city;
     }
     async function updateDailyScheduleWeather(force=false){
       const box=document.getElementById('schedule-weather-card');if(!box)return;
-      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=weatherCacheKey('v16-daily-weather',`${city}|${iso}`),cached=localStorage.getItem(key);
-      document.getElementById('schedule-weather-city').textContent=city;
-      document.getElementById('schedule-weather-date').textContent=`${iso?iso.replaceAll('-','/'):''} 行程天氣`;
-      if(cached&&!force){
-        try{const c=JSON.parse(cached);document.getElementById('schedule-weather-temp').textContent=c.temp;document.getElementById('schedule-weather-detail').textContent=c.detail}catch(e){}
-      }
+      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=weatherCacheKey('v17-daily-weather',`${city}|${iso}`),cached=localStorage.getItem(key),seq=++dailyWeatherRequestSeq;
+      const cityEl=document.getElementById('schedule-weather-city'),dateEl=document.getElementById('schedule-weather-date'),tempEl=document.getElementById('schedule-weather-temp'),detailEl=document.getElementById('schedule-weather-detail');
+      if(cityEl)cityEl.textContent=city;if(dateEl)dateEl.textContent=`${iso?iso.replaceAll('-','/'):''} 行程天氣・依今日行程自動判定`;
+      if(cached&&!force){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent=c.detail;if(Date.now()-(c.at||0)<10*60*1000)return}catch(e){}}
+      if(detailEl)detailEl.textContent=`正在定位 ${city} 並更新天氣…`;
       try{
-        const loc=await geocodeWeatherCity(city);
-        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=16&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
-        const d=await fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('weather');return r.json()}),idx=(d.daily?.time||[]).indexOf(iso);
-        let temp,detail;
-        if(idx>=0){temp=`${Math.round(d.daily.temperature_2m_min[idx])}–${Math.round(d.daily.temperature_2m_max[idx])}°C`;detail=`${weatherCodeText(d.daily.weather_code[idx])}・降雨 ${d.daily.precipitation_probability_max[idx]??'--'}%`}
-        else{temp='--°C';detail='行程日期尚未進入 16 天預報範圍'}
-        document.getElementById('schedule-weather-temp').textContent=temp;document.getElementById('schedule-weather-detail').textContent=detail;
-        localStorage.setItem(key,JSON.stringify({temp,detail,at:Date.now()}));
-      }catch(e){
-        if(!cached){document.getElementById('schedule-weather-temp').textContent='--°C';document.getElementById('schedule-weather-detail').textContent='離線／暫無天氣資料'}
-      }
+        const loc=await geocodeWeatherCity(city);if(seq!==dailyWeatherRequestSeq)return;
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=16&timezone=${encodeURIComponent(loc.timezone||'auto')}`;
+        const res=await fetch(url,{cache:'no-store',signal:controller.signal});clearTimeout(timer);if(!res.ok)throw new Error('weather');const d=await res.json();if(seq!==dailyWeatherRequestSeq)return;
+        const idx=(d.daily?.time||[]).indexOf(iso);let temp,detail;
+        if(idx>=0){temp=`${Math.round(d.daily.temperature_2m_min[idx])}–${Math.round(d.daily.temperature_2m_max[idx])}°C`;detail=`${weatherCodeText(d.daily.weather_code[idx])}・降雨 ${d.daily.precipitation_probability_max[idx]??'--'}%・${loc.name||city}`;}
+        else{const cur=d.current||{};temp=Number.isFinite(cur.temperature_2m)?`目前 ${Math.round(cur.temperature_2m)}°C`:'--°C';detail=`行程日期尚未進入 16 天預報｜${weatherCodeText(cur.weather_code)}・體感 ${Number.isFinite(cur.apparent_temperature)?Math.round(cur.apparent_temperature)+'°C':'--'}・濕度 ${Number.isFinite(cur.relative_humidity_2m)?Math.round(cur.relative_humidity_2m)+'%':'--'}・${loc.name||city}`;}
+        if(tempEl)tempEl.textContent=temp;if(detailEl)detailEl.textContent=detail;localStorage.setItem(key,JSON.stringify({temp,detail,at:Date.now(),city,iso}));
+      }catch(e){if(cached){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent='離線顯示上次資料｜'+c.detail}catch(_){}}else{if(tempEl)tempEl.textContent='--°C';if(detailEl)detailEl.textContent='離線／暫無天氣資料';}}
     }
+
 
 
     // ---------------- 頂部地圖、優惠券、備選景點 ----------------
@@ -2473,8 +2564,8 @@
     }
 
     document.addEventListener('DOMContentLoaded',()=>{renderBookingsForTrip();initBookingPdfUpload();applyTripConfigUI();applyCurrencyUI();populateWeatherCities();updateWeatherDisplay(false);setTimeout(()=>{migrateLegacyMediaToIndexedDB();updateDailyScheduleWeather(false);},400);});
-    setInterval(()=>{if(document.visibilityState!=='visible'||tripTransitioning)return;if(activeTab==='tools')updateWeatherDisplay(true);if(activeTab==='schedule')updateDailyScheduleWeather(true);},5*60*1000);
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!tripTransitioning){if(activeTab==='tools')updateWeatherDisplay(true);if(activeTab==='schedule')updateDailyScheduleWeather(false);}});
+    setInterval(()=>{if(document.visibilityState!=='visible'||tripTransitioning)return;if(activeTab==='tools'){syncWeatherToolToScheduleLocation();updateWeatherDisplay(true)}if(activeTab==='schedule')updateDailyScheduleWeather(true);},3*60*1000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!tripTransitioning){if(activeTab==='tools'){syncWeatherToolToScheduleLocation();updateWeatherDisplay(true)}if(activeTab==='schedule')updateDailyScheduleWeather(true);}});
 
     const defaultCoupons = [
       {name:"松本清",note:'點圖片可放大查看優惠券',image:"./images/coupons/coupon_01.webp"},
@@ -2604,7 +2695,7 @@
         titleEl.innerHTML = `<div class="flex items-center gap-2"><span class="px-2.5 py-1 rounded-lg bg-skyBlue text-white">新增景點</span><button type="button" onclick="closeGlobalModal();openCandidateModal()" class="px-2.5 py-1 rounded-lg bg-paper border border-sand text-skyBlue btn-press">備選景點</button></div>`;
         bodyEl.innerHTML = `
           <input type="text" id="m-title" placeholder="景點名稱" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
-          <div><label class="block text-[10px] text-gray-400 mb-1">時間</label><select id="m-time" class="w-full p-2.5 bg-paper rounded-xl border border-sand font-bold text-wood">${halfHourTimeOptions()}</select></div>
+          <div class="mobile-form-grid two"><div><label class="block text-[10px] text-gray-400 mb-1">時間</label><select id="m-time" class="w-full p-2.5 bg-paper rounded-xl border border-sand font-bold text-wood">${halfHourTimeOptions()}</select></div><div><label class="block text-[10px] text-gray-400 mb-1">城市／地區（天氣用，可留空）</label><input id="m-city" value="" placeholder="自動判斷；需要時填台南／紐約／河口湖" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div></div>
           <div class="text-[9px] text-gray-400">將直接加入目前停留的 ${daysData[currentDayIndex].date}（${daysData[currentDayIndex].w}）；如要完整照片、地圖與介紹，請使用「備選景點」。</div>
           <button type="button" onclick="submitNewSchedule()" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl btn-press">加入行程</button>
         `;
@@ -2612,6 +2703,7 @@
         titleEl.innerText = '新增記帳項目';
         bodyEl.innerHTML = `
           <input type="text" id="m-exp-note" placeholder="項目名稱 (例: 拉麵)" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+          <div><label class="block text-[10px] text-gray-400 mb-1">消費日期（預設手機日期）</label><input type="date" id="m-exp-date" value="${localDateInputValue()}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
           <div class="grid grid-cols-2 gap-2">
             <input type="number" id="m-exp-amount" placeholder="金額" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
             <select id="m-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand font-bold text-wood">${expenseCurrencyOptions(foreignCurrency())}</select>
@@ -2683,14 +2775,15 @@
       const title=document.getElementById('m-title')?.value?.trim();const time=document.getElementById('m-time')?.value;
       if(!title)return alert('請輸入景點名稱');if(!time)return alert('請選擇時間');
       const dayIdx=currentDayIndex;
-      daysData[dayIdx].items.push({id:'item-'+Date.now(),time,title,type:'',tagClass:'',group:'',address:title,note:'',intro:''});
+      const city=document.getElementById('m-city')?.value?.trim()||'';
+      daysData[dayIdx].items.push({id:'item-'+Date.now(),time,title,type:'',tagClass:'',group:'',address:title,city,note:'',intro:''});
       daysData[dayIdx].items.sort((a,b)=>a.time.localeCompare(b.time));saveDays();renderTimeline(dayIdx);closeGlobalModal();
     }
 
     async function submitNewExpense() {
-      const note=document.getElementById('m-exp-note').value;const amount=document.getElementById('m-exp-amount').value;const currency=document.getElementById('m-exp-curr').value;const payMethod=document.getElementById('m-exp-pay').value;const category=document.getElementById('m-exp-cat').value;
+      const note=document.getElementById('m-exp-note').value;const amount=document.getElementById('m-exp-amount').value;const currency=document.getElementById('m-exp-curr').value;const payMethod=document.getElementById('m-exp-pay').value;const category=document.getElementById('m-exp-cat').value;const date=document.getElementById('m-exp-date')?.value||localDateInputValue();
       if(!note||!amount)return alert('請完整輸入名稱與金額');let file=document.getElementById('m-exp-img-camera')?.files[0]||document.getElementById('m-exp-img-gallery')?.files[0];let receiptImage='';if(file){try{receiptImage=await compressReceipt(file)}catch(e){}}
-      expenses.unshift({id:Date.now(),note,amount:Number(amount),currency,category,payMethod,time:new Date().toLocaleString('zh-TW',{hour12:false}),receiptImage});saveExpenses();renderExpenses();closeGlobalModal();
+      expenses.unshift({id:Date.now(),note,amount:Number(amount),currency,category,payMethod,time:`${date.replaceAll('-','/')} ${localTimeHHMM()}`,receiptImage});saveExpenses();renderExpenses();closeGlobalModal();
     }
 
     async function submitNewShopItem(){
