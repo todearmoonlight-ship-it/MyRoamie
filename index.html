@@ -382,7 +382,7 @@ body{
   <!-- ================= 1. 封面頁 (SPLASH SCREEN) ================= -->
   <div id="splash-screen"
      class="fixed inset-0 z-50 bg-cover bg-center flex flex-col justify-between p-6 text-white text-center"
-     style="background-image: url('./cover.jpg');">
+     style="background-image: url('./cover.png');">
     <div class="w-full flex justify-end">
       <button type="button" onclick="openTripManager()" class="px-3 py-2 rounded-full bg-black/45 text-white text-xs font-bold backdrop-blur-md btn-press shadow-lg">
         <i class="fa-solid fa-suitcase-rolling mr-1"></i>我的旅程
@@ -1105,7 +1105,7 @@ body{
     const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
     const defaultTripConfig={
       title:'東京自由行 2026',headerTitle:'東京手帳 2026',emoji:'🍁',country:'日本',city:'東京',
-      startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',
+      startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.png',
       showManual:true,manualUrl:'https://drive.google.com/file/d/1aHA5tdPdgZ_VkoHTnogRh7v6ZNLmvVFC/view?usp=drive_link',
       showMap:true,mapUrl:'https://www.google.com/maps/d/viewer?mid=18IC04UGBo0p-LLcvXxef7GwkgqtFO1Y&usp=sharing',
       showCoupons:true,autoImages:true,baseCurrency:'NTD',foreignCurrency:'JPY',exchangeRate:0.22
@@ -1117,7 +1117,7 @@ body{
         const x=JSON.parse(localStorage.getItem(TRIP_MANAGER_KEY)||'null');
         if(x?.trips?.length&&x.activeId)return x;
       }catch(e){}
-      return {activeId:'trip-tokyo-2026',trips:[{id:'trip-tokyo-2026',title:'東京自由行 2026',city:'東京',country:'日本',startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',useTokyoSeed:true,snapshot:null}]};
+      return {activeId:'trip-tokyo-2026',trips:[{id:'trip-tokyo-2026',title:'東京自由行 2026',city:'東京',country:'日本',startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.png',useTokyoSeed:true,snapshot:null}]};
     }
     let tripManagerState=loadTripManagerState();
     let tripTransitioning=false;
@@ -1203,8 +1203,8 @@ body{
       const coupon=document.getElementById('header-coupon-icon');if(coupon)coupon.classList.toggle('hidden',!tripConfig.showCoupons);
       const splash=document.getElementById('splash-screen');
       if(splash){
-        let cover=tripConfig.cover||'./cover.jpg';
-        try{if(isMediaRef?.(cover))cover=await resolveMediaUrl(cover)||'./cover.jpg'}catch(e){}
+        let cover=tripConfig.cover||'./cover.png';
+        try{if(isMediaRef?.(cover))cover=await resolveMediaUrl(cover)||'./cover.png'}catch(e){}
         splash.style.backgroundImage=`url("${cover}")`;
       }
       populateWeatherCities();
@@ -3267,7 +3267,7 @@ body{
       if(!foreignCurr||!Number.isFinite(rate)||rate<=0)return alert('請填寫當地／外幣代碼與有效匯率');
       if(end<start)return alert('回程日期不可早於出發日期');
       persistActiveTripSnapshot();
-      const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate};
+      const id='trip-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),cfg={...defaultTripConfig,title,headerTitle:title,emoji:'✈️',country,city,startDate:start,endDate:end,cover:'./cover.png',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate};
       const f=document.getElementById('new-trip-cover')?.files?.[0];if(f){try{cfg.cover=await putMediaDataURL(await compressReceipt(f,1200,.8),'cover')}catch(e){}}
       const t={id,title,city,country,startDate:start,endDate:end,cover:cfg.cover,baseCurrency:baseCurr,foreignCurrency:foreignCurr,exchangeRate:rate,useTokyoSeed:false,snapshot:createBlankTripSnapshot(cfg)};
       tripTransitioning=true;showTripSwitchOverlay(`正在建立「${title}」…`);tripManagerState.trips.push(t);restoreTripSnapshot(t);tripManagerState.activeId=id;saveTripManagerState();location.reload();
@@ -3354,7 +3354,7 @@ body{
       if(t?.useTokyoSeed!==false){
         t.snapshot=null;
       }else{
-        const cfg={...defaultTripConfig,title:t.title||'我的旅行',headerTitle:t.title||'我的旅行',emoji:'✈️',country:t.country||'',city:t.city||'',startDate:t.startDate,endDate:t.endDate,cover:t.cover||'./cover.jpg',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:t.baseCurrency||tripConfig.baseCurrency||'NTD',foreignCurrency:t.foreignCurrency||tripConfig.foreignCurrency||'JPY',exchangeRate:Number(t.exchangeRate||currentExchangeRate||tripConfig.exchangeRate)||0.22};
+        const cfg={...defaultTripConfig,title:t.title||'我的旅行',headerTitle:t.title||'我的旅行',emoji:'✈️',country:t.country||'',city:t.city||'',startDate:t.startDate,endDate:t.endDate,cover:t.cover||'./cover.png',showManual:false,manualUrl:'',showMap:true,mapUrl:'',showCoupons:false,autoImages:true,baseCurrency:t.baseCurrency||tripConfig.baseCurrency||'NTD',foreignCurrency:t.foreignCurrency||tripConfig.foreignCurrency||'JPY',exchangeRate:Number(t.exchangeRate||currentExchangeRate||tripConfig.exchangeRate)||0.22};
         t.snapshot=createBlankTripSnapshot(cfg);
         restoreTripSnapshot(t);
       }
