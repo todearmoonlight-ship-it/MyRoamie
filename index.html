@@ -289,22 +289,56 @@
       }
     }
 
-  
-    /* === v12：固定手機視窗與觸控 === */
-    html{
-      width:100%;
-      max-width:100%;
-      overflow-x:clip;
-      touch-action:manipulation;
-      -webkit-text-size-adjust:100%;
-      text-size-adjust:100%;
-    }
-    body{
-      width:100%;
-      max-width:448px;
-      overflow-x:clip;
-      touch-action:manipulation;
-    }
+  /* === 手機滿版／桌機維持手機寬度 === */
+
+/* 所有元素寬度都包含 padding 與 border，避免超出螢幕 */
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
+}
+
+html{
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  width:100%;
+  max-width:448px;
+  margin:0 auto;
+  overflow-x:hidden;
+  touch-action:manipulation;
+}
+
+/* 手機真正滿版，不顯示左右外框 */
+@media (max-width:480px){
+  html,
+  body{
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    border-left:0 !important;
+    border-right:0 !important;
+    box-shadow:none !important;
+  }
+
+  #splash-screen{
+    width:100% !important;
+    max-width:100% !important;
+    left:0 !important;
+    right:0 !important;
+    margin:0 !important;
+    box-shadow:none !important;
+  }
+}
+   
     button,a,label,.btn-press,.shop-card-head,.draggable-card{
       touch-action:manipulation;
     }
@@ -343,10 +377,12 @@
 
   </style>
 </head>
-<body class="pb-24 max-w-md mx-auto relative min-h-screen border-x border-sand/60 shadow-2xl">
+<body class="pb-24 relative min-h-screen">
 
   <!-- ================= 1. 封面頁 (SPLASH SCREEN) ================= -->
-  <div id="splash-screen" class="fixed inset-0 z-50 max-w-md mx-auto bg-cover bg-center flex flex-col justify-between p-6 text-white text-center shadow-2xl" style="background-image: url('./cover.jpg');">
+  <div id="splash-screen"
+     class="fixed inset-0 z-50 bg-cover bg-center flex flex-col justify-between p-6 text-white text-center"
+     style="background-image: url('./cover.jpg');">
     <div class="w-full flex justify-end">
       <button type="button" onclick="openTripManager()" class="px-3 py-2 rounded-full bg-black/45 text-white text-xs font-bold backdrop-blur-md btn-press shadow-lg">
         <i class="fa-solid fa-suitcase-rolling mr-1"></i>我的旅程
