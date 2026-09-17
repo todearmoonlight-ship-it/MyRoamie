@@ -1580,7 +1580,19 @@
     function splitMemberPickerHtml(selected=[]){
       const chosen=new Set((selected||[]).map(String));
       if(!splitMembers.length)return `<div class="p-3 rounded-2xl bg-paper border border-sand text-[10px] text-gray-500"><i class="fa-solid fa-user-group text-skyBlue mr-1"></i>尚未設定分帳人員。可先至「記帳設定 → 分帳人員」新增；未選人員的支出不會列入拆帳。</div>`;
-      return `<div class="p-3 rounded-2xl bg-paper border border-sand space-y-2"><div class="flex items-center justify-between gap-2"><div class="font-bold text-wood text-xs"><i class="fa-solid fa-user-group text-skyBlue mr-1"></i>分帳人員</div><div class="text-[9px] text-gray-400">可複選・平均分攤</div></div><div class="grid grid-cols-2 gap-2">${splitMembers.map(m=>`<label class="min-w-0 flex items-center gap-2 p-2 rounded-xl bg-card border border-sand cursor-pointer"><input type="checkbox" name="expense-split-member" value="${escapeHtml(m.id)}" ${chosen.has(String(m.id))?'checked':''} class="accent-sky-500 shrink-0"><span class="truncate text-xs font-bold text-wood">${escapeHtml(m.name)}</span></label>`).join('')}</div></div>`;
+      const allChecked=splitMembers.length>0&&splitMembers.every(m=>chosen.has(String(m.id)));
+      return `<div class="p-3 rounded-2xl bg-paper border border-sand space-y-2"><div class="flex items-center justify-between gap-2"><div class="font-bold text-wood text-xs"><i class="fa-solid fa-user-group text-skyBlue mr-1"></i>分帳人員</div><label class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-skyLight text-skyBlue border border-skyBlue/20 cursor-pointer btn-press"><input id="expense-split-select-all" type="checkbox" ${allChecked?'checked':''} onchange="toggleAllExpenseSplitMembers(this.checked)" class="accent-sky-500"><span class="text-[10px] font-bold">全選</span></label></div><div class="text-[9px] text-gray-400">可複選・平均分攤</div><div class="grid grid-cols-2 gap-2">${splitMembers.map(m=>`<label class="min-w-0 flex items-center gap-2 p-2 rounded-xl bg-card border border-sand cursor-pointer"><input type="checkbox" name="expense-split-member" value="${escapeHtml(m.id)}" ${chosen.has(String(m.id))?'checked':''} onchange="syncExpenseSplitSelectAll()" class="accent-sky-500 shrink-0"><span class="truncate text-xs font-bold text-wood">${escapeHtml(m.name)}</span></label>`).join('')}</div></div>`;
+    }
+    function toggleAllExpenseSplitMembers(checked){
+      document.querySelectorAll('input[name="expense-split-member"]').forEach(x=>{x.checked=!!checked;});
+      syncExpenseSplitSelectAll();
+    }
+    function syncExpenseSplitSelectAll(){
+      const boxes=[...document.querySelectorAll('input[name="expense-split-member"]')],all=document.getElementById('expense-split-select-all');
+      if(!all)return;
+      const n=boxes.filter(x=>x.checked).length;
+      all.checked=boxes.length>0&&n===boxes.length;
+      all.indeterminate=n>0&&n<boxes.length;
     }
     function selectedSplitMemberIds(){return [...document.querySelectorAll('input[name="expense-split-member"]:checked')].map(x=>x.value);}
     function baseCurrency(){return String(tripConfig.baseCurrency||'NTD').trim().toUpperCase()||'NTD';}
