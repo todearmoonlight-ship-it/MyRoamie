@@ -151,7 +151,7 @@
     .keep-text-xl { font-size:20px !important; line-height:1.75rem !important; }
     .keep-text-2xl { font-size:24px !important; line-height:2rem !important; }
     .keep-text-3xl { font-size:30px !important; line-height:2.25rem !important; }
-    .expense-filter-btn.active { background:rgba(255,255,255,.45) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.65); }
+    .expense-filter-btn.active, .expense-split-btn.active { background:rgba(255,255,255,.45) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.65); }
     #budget-percent { font-size:12px !important; }
     #budget-spent, #budget-left { font-size:10px !important; }
     #total-jpy, #rate-display { font-size:12px !important; }
@@ -578,8 +578,11 @@
           <button onclick="filterExpenseCategory('其他')" data-expense-cat="其他" title="其他" class="expense-filter-btn px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/40 btn-press">
             <i class="fa-solid fa-coins"></i>
           </button>
+          <button id="expense-split-summary-btn" onclick="showExpenseSplitSummary()" title="拆帳" aria-label="拆帳" class="expense-split-btn px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/40 btn-press">
+            <i class="fa-solid fa-people-arrows-left-right"></i>
+          </button>
         </div>
-        <span id="rate-display" class="hidden">0.22</span>
+        <div class="text-[10px] opacity-75 text-right -mt-1"><span id="rate-caption">匯率 1 JPY = 0.22 NTD</span></div>
       </div>
 
       <!-- OCR 文字掃描記帳 -->
@@ -1027,7 +1030,7 @@
     // ===== V15.1 通用旅程：保留原版 UI =====
     const V15_CONFIG_KEY='tripbook-v15-config';
     const TRIP_MANAGER_KEY='tripbook-v15-trip-manager';
-    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
+    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
     const defaultTripConfig={
       title:'東京自由行 2026',headerTitle:'東京手帳 2026',emoji:'🍁',country:'日本',city:'東京',
       startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.jpg',
@@ -1102,6 +1105,7 @@
       return {
         'tokyo-days-v2':JSON.stringify(tripDates(cfg.startDate,cfg.endDate)),
         'tokyo-expenses-v2':'[]',
+        'tokyo-expense-split-members-v1':'[]',
         'tokyo-rate-v2':String(Number(cfg.exchangeRate)||0.22),
         'tokyo-budget-v2':'80000',
         'tokyo-shop-v2':JSON.stringify(blankShopData()),
@@ -1565,6 +1569,20 @@
       { id:2,note:'Suica 加值',amount:3000,currency:'JPY',category:'交通',payMethod:'交通卡',time:'2026/10/25 13:30',receiptImage:'' }
     ]}catch(e){return[]}})();
     let currentCategoryFilter='全部';
+    let expenseViewMode='list';
+    const EXPENSE_SPLIT_MEMBERS_KEY='tokyo-expense-split-members-v1';
+    let splitMembers=(()=>{try{const x=JSON.parse(localStorage.getItem(EXPENSE_SPLIT_MEMBERS_KEY)||'[]');return Array.isArray(x)?x.filter(m=>m&&m.id&&m.name):[]}catch(e){return[]}})();
+    function saveSplitMembers(){localStorage.setItem(EXPENSE_SPLIT_MEMBERS_KEY,JSON.stringify(splitMembers));}
+    function splitIdsForExpense(item){
+      const valid=new Set(splitMembers.map(m=>String(m.id)));
+      return (Array.isArray(item?.splitWith)?item.splitWith:[]).map(String).filter(id=>valid.has(id));
+    }
+    function splitMemberPickerHtml(selected=[]){
+      const chosen=new Set((selected||[]).map(String));
+      if(!splitMembers.length)return `<div class="p-3 rounded-2xl bg-paper border border-sand text-[10px] text-gray-500"><i class="fa-solid fa-user-group text-skyBlue mr-1"></i>尚未設定分帳人員。可先至「記帳設定 → 分帳人員」新增；未選人員的支出不會列入拆帳。</div>`;
+      return `<div class="p-3 rounded-2xl bg-paper border border-sand space-y-2"><div class="flex items-center justify-between gap-2"><div class="font-bold text-wood text-xs"><i class="fa-solid fa-user-group text-skyBlue mr-1"></i>分帳人員</div><div class="text-[9px] text-gray-400">可複選・平均分攤</div></div><div class="grid grid-cols-2 gap-2">${splitMembers.map(m=>`<label class="min-w-0 flex items-center gap-2 p-2 rounded-xl bg-card border border-sand cursor-pointer"><input type="checkbox" name="expense-split-member" value="${escapeHtml(m.id)}" ${chosen.has(String(m.id))?'checked':''} class="accent-sky-500 shrink-0"><span class="truncate text-xs font-bold text-wood">${escapeHtml(m.name)}</span></label>`).join('')}</div></div>`;
+    }
+    function selectedSplitMemberIds(){return [...document.querySelectorAll('input[name="expense-split-member"]:checked')].map(x=>x.value);}
     function baseCurrency(){return String(tripConfig.baseCurrency||'NTD').trim().toUpperCase()||'NTD';}
     function foreignCurrency(){return String(tripConfig.foreignCurrency||'JPY').trim().toUpperCase()||'JPY';}
     function toBaseAmount(amount,currency){return String(currency).toUpperCase()===foreignCurrency()?amount*currentExchangeRate:amount;}
@@ -1591,14 +1609,79 @@
           <button type="button" onclick="exportExpensesCSV();closeGlobalModal()" class="p-3 rounded-xl bg-[#EBF6EC] text-emerald-700 font-bold btn-press"><i class="fa-solid fa-file-csv mr-1.5"></i>匯出 CSV</button>
           <button type="button" onclick="exportExpensesExcel();closeGlobalModal()" class="p-3 rounded-xl bg-[#EBF6EC] text-emerald-700 font-bold btn-press"><i class="fa-solid fa-file-excel mr-1.5"></i>匯出 Excel</button>
         </div>
+        <button type="button" onclick="openSplitMemberSettings()" class="w-full p-3 rounded-xl bg-[#FFF0E8] border border-[#F5C9B4] text-wood font-bold btn-press"><i class="fa-solid fa-user-group text-torii mr-1.5"></i>分帳人員 <span class="text-[10px] text-gray-400 ml-1">${splitMembers.length} 人</span></button>
         <div class="text-[10px] text-gray-400 bg-paper rounded-xl p-2.5">目前匯率：1 ${foreignCurrency()} = <b>${currentExchangeRate}</b> ${baseCurrency()}<br>目前旅遊總預算：${baseCurrency()} <b>${Math.round(travelBudget).toLocaleString()}</b><br>匯出檔案包含日期、項目、類別、付款方式、原幣金額與 ${baseCurrency()} 估算；不嵌入收據照片。</div>`;
       document.getElementById('global-modal').classList.remove('hidden');
     }
+    function openSplitMemberSettings(){
+      document.getElementById('modal-title').innerHTML='<span><i class="fa-solid fa-user-group text-skyBlue mr-2"></i>分帳人員</span>';
+      const rows=splitMembers.length?splitMembers.map(m=>{
+        const used=expenses.filter(e=>splitIdsForExpense(e).includes(String(m.id))).length;
+        return `<div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-paper border border-sand"><div class="min-w-0"><div class="font-bold text-wood truncate">${escapeHtml(m.name)}</div><div class="text-[9px] text-gray-400 mt-0.5">${used} 筆消費已使用</div></div><button type="button" onclick="deleteSplitMember('${escapeHtml(m.id)}')" class="w-9 h-9 shrink-0 rounded-xl bg-sakuraLight text-torii btn-press" title="刪除"><i class="fa-solid fa-trash"></i></button></div>`;
+      }).join(''):'<div class="text-center text-gray-400 py-4">尚未新增分帳人員</div>';
+      document.getElementById('modal-form-body').innerHTML=`
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-wood">請輸入分帳人員名稱：</label>
+          <div class="flex gap-2"><input id="split-member-name" type="text" placeholder="例如：王曉明" class="min-w-0 flex-1 p-2.5 bg-paper rounded-xl border border-sand"><button type="button" onclick="addSplitMemberFromSettings()" class="px-4 rounded-xl bg-skyBlue text-white font-bold btn-press"><i class="fa-solid fa-plus"></i></button></div>
+        </div>
+        <div class="space-y-2">${rows}</div>
+        <div class="text-[9px] text-gray-400 bg-paper rounded-xl p-2.5">新增人員後，在每筆記帳中勾選參與分帳的人員；系統會以該筆總額平均分攤。刪除人員時，也會從既有支出的分帳名單中移除。</div>
+        <button type="button" onclick="openExpenseSettings()" class="w-full py-2.5 rounded-xl bg-paper border border-sand text-wood font-bold btn-press"><i class="fa-solid fa-arrow-left mr-1"></i>返回記帳設定</button>`;
+      setTimeout(()=>document.getElementById('split-member-name')?.focus(),80);
+    }
+    function addSplitMemberFromSettings(){
+      const input=document.getElementById('split-member-name'),name=input?.value?.trim();
+      if(!name)return alert('請輸入人員名稱');
+      if(splitMembers.some(m=>m.name.trim().toLowerCase()===name.toLowerCase()))return alert('此人員名稱已存在');
+      splitMembers.push({id:'person-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),name});
+      saveSplitMembers();persistActiveTripSnapshot();openSplitMemberSettings();
+    }
+    function deleteSplitMember(id){
+      const m=splitMembers.find(x=>String(x.id)===String(id));if(!m)return;
+      const used=expenses.filter(e=>splitIdsForExpense(e).includes(String(id))).length;
+      if(!confirm(`確定刪除「${m.name}」？${used?`\n此人目前出現在 ${used} 筆分帳中，刪除後會同步移除。`:''}`))return;
+      splitMembers=splitMembers.filter(x=>String(x.id)!==String(id));
+      expenses.forEach(e=>{if(Array.isArray(e.splitWith))e.splitWith=e.splitWith.map(String).filter(x=>x!==String(id));});
+      saveSplitMembers();saveExpenses();persistActiveTripSnapshot();openSplitMemberSettings();
+      if(expenseViewMode==='split')renderExpenses();
+    }
     function filterExpenseCategory(cat){
+      expenseViewMode='list';
+      document.getElementById('expense-split-summary-btn')?.classList.remove('active');
       currentCategoryFilter=cat;
       document.getElementById('expense-list-title').innerText=`支出明細 (${cat})`;
       document.querySelectorAll('.expense-filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.expenseCat===cat));
       renderExpenses();
+    }
+
+    function showExpenseSplitSummary(){
+      expenseViewMode='split';currentCategoryFilter='全部';
+      document.querySelectorAll('.expense-filter-btn').forEach(b=>b.classList.remove('active'));
+      document.getElementById('expense-split-summary-btn')?.classList.add('active');
+      renderExpenses();
+    }
+    function toggleSplitMemberDetail(id){
+      const el=document.getElementById(`split-detail-${id}`),icon=document.getElementById(`split-icon-${id}`);if(!el)return;
+      const opening=el.classList.contains('hidden');el.classList.toggle('hidden',!opening);if(icon)icon.classList.toggle('rotate-180',opening);
+    }
+    function renderExpenseSplitSummary(list){
+      const title=document.getElementById('expense-list-title');if(title)title.textContent='分帳人員明細';
+      if(!splitMembers.length){list.innerHTML='<div class="p-5 text-center rounded-2xl bg-paper border border-sand text-gray-400"><i class="fa-solid fa-user-group text-2xl text-skyBlue mb-2"></i><div class="font-bold text-wood">尚未設定分帳人員</div><div class="text-[10px] mt-1">請至右上角齒輪 → 分帳人員新增。</div><button type="button" onclick="openExpenseSettings()" class="mt-3 px-4 py-2 rounded-xl bg-skyLight text-skyBlue font-bold btn-press">前往設定</button></div>';return;}
+      list.innerHTML='';
+      splitMembers.forEach(member=>{
+        const items=expenses.filter(e=>splitIdsForExpense(e).includes(String(member.id))).slice().sort((a,b)=>String(a.time).localeCompare(String(b.time)));
+        const totalBase=items.reduce((sum,item)=>{const ids=splitIdsForExpense(item),share=ids.length?(Number(item.amount)||0)/ids.length:0;return sum+toBaseAmount(share,item.currency)},0);
+        const card=document.createElement('div');card.className='rounded-2xl border border-sand bg-paper overflow-hidden';
+        card.innerHTML=`<button type="button" onclick="toggleSplitMemberDetail('${escapeHtml(member.id)}')" class="w-full p-3.5 flex items-center justify-between gap-3 text-left btn-press"><div class="min-w-0"><div class="font-bold text-wood text-sm truncate">${escapeHtml(member.name)}</div><div class="text-[10px] text-gray-400 mt-0.5">${items.length} 筆消費</div></div><div class="flex items-center gap-3 shrink-0"><div class="text-right"><div class="font-bold text-torii text-base">${baseCurrency()} ${Math.round(totalBase).toLocaleString()}</div><div class="text-[9px] text-gray-400">點擊展開明細</div></div><i id="split-icon-${escapeHtml(member.id)}" class="fa-solid fa-chevron-down text-gray-400 transition-transform"></i></div></button><div id="split-detail-${escapeHtml(member.id)}" class="hidden border-t border-dashed border-sand p-2.5 space-y-2"></div>`;
+        list.appendChild(card);
+        const body=card.querySelector(`#split-detail-${CSS.escape(String(member.id))}`);
+        if(!items.length){body.innerHTML='<div class="text-center text-[10px] text-gray-400 py-3">目前沒有分配給此人員的支出。</div>';return;}
+        items.forEach(item=>{
+          const ids=splitIdsForExpense(item),count=ids.length,amount=Number(item.amount)||0,share=count?amount/count:0,baseShare=toBaseAmount(share,item.currency);
+          const row=document.createElement('div');row.className='p-3 bg-card rounded-xl border border-sand/70';
+          row.innerHTML=`<div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="font-bold text-wood">${escapeHtml(item.note||'未命名')}</div><div class="text-[10px] mt-1"><span class="text-skyBlue font-bold">${count} 人</span><span class="text-gray-400"> ・ ${escapeHtml(item.category||'其他')} ・ ${escapeHtml(item.payMethod||'')} ${expenseTimeOnly(item)?'・ '+escapeHtml(expenseTimeOnly(item)):''}</span></div></div><div class="text-right shrink-0"><div class="text-[10px] text-wood">共 <b>${escapeHtml(item.currency||baseCurrency())} ${amount.toLocaleString(undefined,{maximumFractionDigits:2})}</b></div><div class="font-bold text-torii mt-0.5">分攤 ${escapeHtml(item.currency||baseCurrency())} ${share.toLocaleString(undefined,{maximumFractionDigits:2})}</div><div class="text-[9px] text-gray-400">約 ${baseCurrency()} ${Math.round(baseShare).toLocaleString()}</div></div></div>`;body.appendChild(row);
+        });
+      });
     }
 
     function expenseDateInfo(item){
@@ -1650,6 +1733,17 @@
         displayTotalJpy+=toForeignAmount(amount,item.currency);
       });
 
+      if(expenseViewMode==='split'){
+        renderExpenseSplitSummary(list);
+        const spentBase=expenses.reduce((sum,item)=>sum+toBaseAmount(Number(item.amount)||0,item.currency),0);
+        document.getElementById('total-jpy').innerText=Math.round(displayTotalJpy).toLocaleString();
+        document.getElementById('total-twd').innerText=Math.round(displayTotalTwd).toLocaleString();
+        applyCurrencyUI();
+        const label=document.getElementById('expense-total-label');if(label)label.innerText='總累計支出';
+        renderBudget(Math.round(spentBase));
+        return;
+      }
+
       const groups=[];
       const groupMap=new Map();
       filtered.forEach(item=>{
@@ -1694,7 +1788,7 @@
           row.innerHTML=`<div class="flex justify-between items-center gap-2 cursor-pointer" onclick="toggleExpenseDetail(${item.id})">
             <div class="min-w-0 flex-1">
               <div class="font-bold text-wood truncate">${item.note}</div>
-              <div class="text-[10px] text-gray-400 mt-0.5"><span class="bg-skyLight text-skyBlue px-1.5 py-0.5 rounded font-bold mr-1">${item.category}</span> ・ ${item.payMethod}${expenseTimeOnly(item)?` ・ ${expenseTimeOnly(item)}`:''}</div>
+              <div class="text-[10px] text-gray-400 mt-0.5"><span class="bg-skyLight text-skyBlue px-1.5 py-0.5 rounded font-bold mr-1">${item.category}</span> ・ ${item.payMethod}${splitIdsForExpense(item).length?` ・ <span class="text-skyBlue font-bold">${splitIdsForExpense(item).length}人分帳</span>`:''}${expenseTimeOnly(item)?` ・ ${expenseTimeOnly(item)}`:''}</div>
             </div>
             <div class="text-right shrink-0"><div class="font-bold text-torii">${escapeHtml(String(item.currency||baseCurrency()))} ${amount.toLocaleString()}</div><div class="text-[9px] text-gray-400">約 ${baseCurrency()} ${approxTwd.toLocaleString()}</div></div>
           </div>
@@ -1759,13 +1853,14 @@
     function editExpense(id){
       const item=expenses.find(x=>x.id===id);if(!item)return;
       document.getElementById('modal-title').innerText='編輯支出';document.getElementById('modal-form-body').innerHTML=`
-        <input id="edit-exp-note" value="${item.note}" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
+        <input id="edit-exp-note" value="${escapeHtml(item.note||'')}" class="w-full p-2.5 bg-paper rounded-xl border border-sand">
         <div><label class="block text-[10px] text-gray-400 mb-1">消費日期</label><input type="date" id="edit-exp-date" value="${expenseDateInputValue(item)}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"></div>
         <div class="mobile-form-grid two"><input type="number" id="edit-exp-amount" value="${item.amount}" class="w-full p-2.5 bg-paper rounded-xl border border-sand"><select id="edit-exp-curr" class="w-full p-2.5 bg-paper rounded-xl border border-sand">${expenseCurrencyOptions(item.currency)}</select></div>
         <div class="grid grid-cols-2 gap-2"><select id="edit-exp-pay" class="w-full p-2 bg-paper rounded-xl border border-sand">${['現金','信用卡','交通卡'].map(x=>`<option ${item.payMethod===x?'selected':''}>${x}</option>`).join('')}</select><select id="edit-exp-cat" class="w-full p-2 bg-paper rounded-xl border border-sand">${['餐飲','交通','購物','票券','伴手禮','其他'].map(x=>`<option ${item.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        ${splitMemberPickerHtml(splitIdsForExpense(item))}
         ${item.receiptImage?mediaImgTag(item.receiptImage,'receipt-preview','收據照片'):''}<button onclick="saveExpenseEdit(${id})" class="w-full bg-skyBlue text-white font-bold py-2.5 rounded-xl">儲存修改</button>`;document.getElementById('global-modal').classList.remove('hidden');hydrateMediaImages(document.getElementById('modal-form-body'));
     }
-    function saveExpenseEdit(id){const item=expenses.find(x=>x.id===id);if(!item)return;item.note=document.getElementById('edit-exp-note').value;item.amount=Number(document.getElementById('edit-exp-amount').value)||0;item.currency=document.getElementById('edit-exp-curr').value;item.payMethod=document.getElementById('edit-exp-pay').value;item.category=document.getElementById('edit-exp-cat').value;const date=document.getElementById('edit-exp-date')?.value||localDateInputValue(),oldTime=expenseTimeOnly(item)||localTimeHHMM();item.time=`${date.replaceAll('-','/')} ${oldTime}`;saveExpenses();renderExpenses();closeGlobalModal();}
+    function saveExpenseEdit(id){const item=expenses.find(x=>x.id===id);if(!item)return;item.note=document.getElementById('edit-exp-note').value;item.amount=Number(document.getElementById('edit-exp-amount').value)||0;item.currency=document.getElementById('edit-exp-curr').value;item.payMethod=document.getElementById('edit-exp-pay').value;item.category=document.getElementById('edit-exp-cat').value;item.splitWith=selectedSplitMemberIds();const date=document.getElementById('edit-exp-date')?.value||localDateInputValue(),oldTime=expenseTimeOnly(item)||localTimeHHMM();item.time=`${date.replaceAll('-','/')} ${oldTime}`;saveExpenses();renderExpenses();closeGlobalModal();}
     async function deleteExpense(id){if(confirm('確定刪除此筆支出嗎？')){const item=expenses.find(e=>e.id===id);if(item?.receiptImage)await deleteMediaRef(item.receiptImage);expenses=expenses.filter(e=>e.id!==id);saveExpenses();renderExpenses();}}
     renderExpenses();
 
@@ -2442,7 +2537,7 @@
       if(isScheduleDateBeyondForecastRange(iso)){
         box.classList.add('forecast-out-of-range');
         if(tempEl)tempEl.textContent='';
-        if(detailEl)detailEl.textContent='為求準確，僅顯示16日內的天氣預報。';
+        if(detailEl)detailEl.textContent='未曾進入預報16日內。';
         return;
       }
       if(cached&&!force){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent=c.detail;if(Date.now()-(c.at||0)<10*60*1000)return}catch(e){}}
@@ -2745,6 +2840,7 @@
               <option value="其他">其他</option>
             </select>
           </div>
+          ${splitMemberPickerHtml([])}
           
           <div class="flex gap-2 pt-1">
             <label class="flex-1 p-2 bg-paper border border-dashed border-sand rounded-xl text-center cursor-pointer btn-press">
@@ -2803,9 +2899,9 @@
     }
 
     async function submitNewExpense() {
-      const note=document.getElementById('m-exp-note').value;const amount=document.getElementById('m-exp-amount').value;const currency=document.getElementById('m-exp-curr').value;const payMethod=document.getElementById('m-exp-pay').value;const category=document.getElementById('m-exp-cat').value;const date=document.getElementById('m-exp-date')?.value||localDateInputValue();
+      const note=document.getElementById('m-exp-note').value;const amount=document.getElementById('m-exp-amount').value;const currency=document.getElementById('m-exp-curr').value;const payMethod=document.getElementById('m-exp-pay').value;const category=document.getElementById('m-exp-cat').value;const splitWith=selectedSplitMemberIds();const date=document.getElementById('m-exp-date')?.value||localDateInputValue();
       if(!note||!amount)return alert('請完整輸入名稱與金額');let file=document.getElementById('m-exp-img-camera')?.files[0]||document.getElementById('m-exp-img-gallery')?.files[0];let receiptImage='';if(file){try{receiptImage=await compressReceipt(file)}catch(e){}}
-      expenses.unshift({id:Date.now(),note,amount:Number(amount),currency,category,payMethod,time:`${date.replaceAll('-','/')} ${localTimeHHMM()}`,receiptImage});saveExpenses();renderExpenses();closeGlobalModal();
+      expenses.unshift({id:Date.now(),note,amount:Number(amount),currency,category,payMethod,splitWith,time:`${date.replaceAll('-','/')} ${localTimeHHMM()}`,receiptImage});saveExpenses();renderExpenses();closeGlobalModal();
     }
 
     async function submitNewShopItem(){
@@ -2958,7 +3054,7 @@
     function blobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
     function dataURLToBlob(dataURL){const [meta,data]=String(dataURL).split(',');const mime=(meta.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';const bin=atob(data||'');const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new Blob([bytes],{type:mime})}
     async function clearBookingCredentialStore(){try{const db=await openBookingPdfDB();await new Promise((resolve,reject)=>{const tx=db.transaction(BOOKING_PDF_STORE,'readwrite');tx.objectStore(BOOKING_PDF_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}}
-    const APP_EXACT_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2'];
+    const APP_EXACT_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2'];
     function isTokyoAppKey(k){return APP_EXACT_KEYS.includes(k)||k.startsWith('note-')||k.startsWith('tokyo-weather-');}
     function collectAppLocalStorage(){
       const out={};
