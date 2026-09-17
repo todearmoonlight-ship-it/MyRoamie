@@ -220,6 +220,14 @@
     .expense-summary-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:14px;align-items:start;}
     @media (max-width:360px){.expense-summary-grid{grid-template-columns:1fr;}}
 
+    /* v15.4.1：超出 16 日天氣預報範圍時，只顯示單一提示 */
+    #schedule-weather-card.forecast-out-of-range{padding:16px 18px;}
+    #schedule-weather-card.forecast-out-of-range > div{display:block;min-height:42px;}
+    #schedule-weather-card.forecast-out-of-range > div > div:first-child{display:none;}
+    #schedule-weather-card.forecast-out-of-range > div > div:last-child{text-align:center !important;width:100%;}
+    #schedule-weather-card.forecast-out-of-range #schedule-weather-temp{display:none;}
+    #schedule-weather-card.forecast-out-of-range #schedule-weather-detail{font-size:14px !important;line-height:1.5rem !important;color:#9CA3AF !important;text-align:center;white-space:normal;margin:0;}
+
 
   
     /* === v10：手機 Modal 可捲動修正 === */
@@ -2418,11 +2426,25 @@
       const sel=document.getElementById('weather-city'),city=currentScheduleCity();if(!sel||!city)return;
       if(![...sel.options].some(o=>o.value===city)){const o=document.createElement('option');o.value=city;o.textContent=city;sel.prepend(o)}sel.value=city;
     }
+    function isScheduleDateBeyondForecastRange(iso){
+      if(!iso)return false;
+      const now=new Date();now.setHours(0,0,0,0);
+      const target=new Date(`${iso}T12:00:00`);
+      if(Number.isNaN(target.getTime()))return false;
+      return Math.round((target-now)/86400000)>15;
+    }
     async function updateDailyScheduleWeather(force=false){
       const box=document.getElementById('schedule-weather-card');if(!box)return;
-      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=weatherCacheKey('v17-daily-weather',`${city}|${iso}`),cached=localStorage.getItem(key),seq=++dailyWeatherRequestSeq;
+      const city=currentScheduleCity(),day=daysData?.[currentDayIndex],iso=scheduleDayIso(day),key=weatherCacheKey('v18-daily-weather',`${city}|${iso}`),cached=localStorage.getItem(key),seq=++dailyWeatherRequestSeq;
       const cityEl=document.getElementById('schedule-weather-city'),dateEl=document.getElementById('schedule-weather-date'),tempEl=document.getElementById('schedule-weather-temp'),detailEl=document.getElementById('schedule-weather-detail');
+      box.classList.remove('forecast-out-of-range');
       if(cityEl)cityEl.textContent=city;if(dateEl)dateEl.textContent=`${iso?iso.replaceAll('-','/'):''} 行程天氣・依今日行程自動判定`;
+      if(isScheduleDateBeyondForecastRange(iso)){
+        box.classList.add('forecast-out-of-range');
+        if(tempEl)tempEl.textContent='';
+        if(detailEl)detailEl.textContent='未曾進入預報16日內。';
+        return;
+      }
       if(cached&&!force){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent=c.detail;if(Date.now()-(c.at||0)<10*60*1000)return}catch(e){}}
       if(detailEl)detailEl.textContent=`正在定位 ${city} 並更新天氣…`;
       try{
