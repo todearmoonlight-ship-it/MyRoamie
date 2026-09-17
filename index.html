@@ -2442,7 +2442,7 @@
       if(isScheduleDateBeyondForecastRange(iso)){
         box.classList.add('forecast-out-of-range');
         if(tempEl)tempEl.textContent='';
-        if(detailEl)detailEl.textContent='未曾進入預報16日內。';
+        if(detailEl)detailEl.textContent='為求準確，僅顯示16日內的天氣預報。';
         return;
       }
       if(cached&&!force){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent=c.detail;if(Date.now()-(c.at||0)<10*60*1000)return}catch(e){}}
