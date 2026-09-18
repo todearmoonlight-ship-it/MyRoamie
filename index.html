@@ -426,17 +426,23 @@ body{
       <div id="bookings-list" class="space-y-4">
 
         <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand">
-          <div class="flex items-center justify-between gap-3">
-            <div>
+          <button id="booking-pdf-toggle" type="button" onclick="toggleBookingVoucherPanel()" class="w-full flex items-center justify-between gap-3 text-left btn-press" aria-expanded="false">
+            <div class="min-w-0">
               <div class="text-xs font-bold text-wood"><i class="fa-solid fa-folder-open text-torii mr-1"></i>旅遊憑證（PDF／圖片）</div>
-              <div class="text-[9px] text-gray-400 mt-1">可將憑證儲存在此裝置，不上傳雲端，可離線查看。</div>
+              <div class="text-[9px] text-gray-400 mt-1"><span id="booking-pdf-count">讀取中…</span>・點擊展開／收起</div>
             </div>
-            <label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap">
-              <i class="fa-solid fa-upload mr-1"></i>上傳憑證
-              <input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden">
-            </label>
+            <i id="booking-pdf-chevron" class="fa-solid fa-chevron-down text-gray-400 shrink-0 transition-transform duration-200"></i>
+          </button>
+          <div id="booking-pdf-panel" class="hidden pt-3 mt-3 border-t border-dashed border-sand space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-[9px] text-gray-400 leading-relaxed">可將憑證儲存在此裝置，不上傳雲端，可離線查看。</div>
+              <label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap shrink-0">
+                <i class="fa-solid fa-upload mr-1"></i>上傳憑證
+                <input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden">
+              </label>
+            </div>
+            <div id="booking-pdf-list" class="space-y-2"></div>
           </div>
-          <div id="booking-pdf-list" class="space-y-2 mt-3"></div>
         </div>
 
         <!-- 去程航班 -->
@@ -1102,7 +1108,7 @@ body{
     // ===== V15.1 通用旅程：保留原版 UI =====
     const V15_CONFIG_KEY='tripbook-v15-config';
     const TRIP_MANAGER_KEY='tripbook-v15-trip-manager';
-    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
+    const TRIP_DATA_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-expense-split-self-seeded-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2','tripbook-v15-bookings',V15_CONFIG_KEY,'tripbook-v15-coupons'];
     const defaultTripConfig={
       title:'東京自由行 2026',headerTitle:'東京手帳 2026',emoji:'🍁',country:'日本',city:'東京',
       startDate:'2026-10-25',endDate:'2026-11-01',cover:'./cover.png',
@@ -1171,13 +1177,28 @@ body{
       return out;
     }
     function blankShopData(){return {'藥品':[],'伴手禮':[],'美食':[],'超商':[],'其他':[],'購物清單':[]}}
-    function blankPlanData(){return {'必備':[{text:'有效護照',checked:false},{text:'信用卡與現金',checked:false},{text:'網路設備',checked:false}],'衣物':[{text:'外衣外褲',checked:false},{text:'內衣襪子',checked:false}],'隨身用品':[{text:'雨具',checked:false},{text:'水瓶',checked:false}],'3C設備':[{text:'手機及充電器',checked:false},{text:'行動電源',checked:false}],'待辦事項':[{text:'確認護照效期',checked:false}],'其他':[]}}
+    function basePlanTemplate(){
+      return {
+        '必備':['有效護照(6個月)','展場入場證','現金與信用卡','網路設備 (SIM卡/WiFi機)','駕照正本及譯本(自駕用)'],
+        '衣物':['外衣外褲','內衣內褲','正式服裝','帽子','圍巾','手套','外套','睡衣褲','鞋襪','墨鏡'],
+        '隨身用品':['個人常備藥品','個人保養梳妝用品','衛生紙/濕紙巾','口罩','環保袋/小垃圾袋','雨具','保溫瓶','旅行枕','野餐墊','髮箍/髮夾','兒童餐具'],
+        '3C設備':['手機及充電器','耳機','相機','行動電源','筆電','充電線/延長線','運動攝影機','Airtag'],
+        '待辦事項':['Visit Japan Web(搭機前)','下載Disney Resort','旅平險','重要APP事先下載','重要文件電子備份'],
+        '其他':['萬聖節裝扮','旅行鍋','水果刀','夾鏈袋/保鮮盒','暖暖包','便攜式口袋折疊椅','小被被']
+      };
+    }
+    function blankPlanData(){
+      const out={};
+      Object.entries(basePlanTemplate()).forEach(([cat,items])=>{out[cat]=items.map(text=>({text,checked:false}));});
+      return out;
+    }
 
     function createBlankTripSnapshot(cfg){
       return {
         'tokyo-days-v2':JSON.stringify(tripDates(cfg.startDate,cfg.endDate)),
         'tokyo-expenses-v2':'[]',
-        'tokyo-expense-split-members-v1':'[]',
+        'tokyo-expense-split-members-v1':JSON.stringify([{id:'person-self',name:'自己'}]),
+        'tokyo-expense-split-self-seeded-v1':'1',
         'tokyo-rate-v2':String(Number(cfg.exchangeRate)||0.22),
         'tokyo-budget-v2':'80000',
         'tokyo-shop-v2':JSON.stringify(blankShopData()),
@@ -1570,7 +1591,16 @@ body{
     // ---------------- 航程住宿：新旅程自行建立，不沿用東京預設 ----------------
     let bookingItems=(()=>{try{return JSON.parse(localStorage.getItem('tripbook-v15-bookings')||'[]')}catch(e){return[]}})();
     function saveBookingItems(){localStorage.setItem('tripbook-v15-bookings',JSON.stringify(bookingItems));persistActiveTripSnapshot();}
-    function bookingVoucherCard(){return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><div class="flex items-center justify-between gap-3"><div><div class="text-xs font-bold text-wood"><i class="fa-solid fa-folder-open text-torii mr-1"></i>旅遊憑證（PDF／圖片）</div><div class="text-[9px] text-gray-400 mt-1">可將機票、住宿、門票等 PDF 或圖片憑證儲存在此裝置。</div></div><label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap"><i class="fa-solid fa-upload mr-1"></i>上傳憑證<input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden"></label></div><div id="booking-pdf-list" class="space-y-2 mt-3"></div></div>`;}
+    function bookingVoucherCard(){return `<div class="bg-card rounded-2xl p-4 shadow-soft border border-sand"><button id="booking-pdf-toggle" type="button" onclick="toggleBookingVoucherPanel()" class="w-full flex items-center justify-between gap-3 text-left btn-press" aria-expanded="false"><div class="min-w-0"><div class="text-xs font-bold text-wood"><i class="fa-solid fa-folder-open text-torii mr-1"></i>旅遊憑證（PDF／圖片）</div><div class="text-[9px] text-gray-400 mt-1"><span id="booking-pdf-count">讀取中…</span>・點擊展開／收起</div></div><i id="booking-pdf-chevron" class="fa-solid fa-chevron-down text-gray-400 shrink-0 transition-transform duration-200"></i></button><div id="booking-pdf-panel" class="hidden pt-3 mt-3 border-t border-dashed border-sand space-y-3"><div class="flex items-center justify-between gap-3"><div class="text-[9px] text-gray-400 leading-relaxed">可將機票、住宿、門票等 PDF 或圖片憑證儲存在此裝置。</div><label class="px-3 py-2 rounded-xl bg-sakuraLight text-torii text-[10px] font-bold btn-press cursor-pointer whitespace-nowrap shrink-0"><i class="fa-solid fa-upload mr-1"></i>上傳憑證<input id="booking-pdf-input" type="file" accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="hidden"></label></div><div id="booking-pdf-list" class="space-y-2"></div></div></div>`;}
+    function toggleBookingVoucherPanel(force){
+      const panel=document.getElementById('booking-pdf-panel');if(!panel)return;
+      const toggle=document.getElementById('booking-pdf-toggle'),chevron=document.getElementById('booking-pdf-chevron');
+      const open=typeof force==='boolean'?force:panel.classList.contains('hidden');
+      panel.classList.toggle('hidden',!open);
+      if(toggle)toggle.setAttribute('aria-expanded',String(open));
+      if(chevron)chevron.classList.toggle('rotate-180',open);
+      if(open)renderBookingPdfs();
+    }
     function formatBookingDate(date){
       if(!date)return '';
       const d=new Date(date+'T12:00:00');if(Number.isNaN(d.getTime()))return escapeHtml(date);
@@ -1643,8 +1673,18 @@ body{
     let currentCategoryFilter='全部';
     let expenseViewMode='list';
     const EXPENSE_SPLIT_MEMBERS_KEY='tokyo-expense-split-members-v1';
+    const EXPENSE_SPLIT_SELF_SEEDED_KEY='tokyo-expense-split-self-seeded-v1';
+    const DEFAULT_SPLIT_SELF_MEMBER={id:'person-self',name:'自己'};
     let splitMembers=(()=>{try{const x=JSON.parse(localStorage.getItem(EXPENSE_SPLIT_MEMBERS_KEY)||'[]');return Array.isArray(x)?x.filter(m=>m&&m.id&&m.name):[]}catch(e){return[]}})();
     function saveSplitMembers(){localStorage.setItem(EXPENSE_SPLIT_MEMBERS_KEY,JSON.stringify(splitMembers));}
+    (function ensureDefaultSelfSplitMember(){
+      if(localStorage.getItem(EXPENSE_SPLIT_SELF_SEEDED_KEY)==='1')return;
+      if(!splitMembers.some(m=>String(m.name||'').trim()==='自己')){
+        splitMembers.unshift({...DEFAULT_SPLIT_SELF_MEMBER});
+        saveSplitMembers();
+      }
+      localStorage.setItem(EXPENSE_SPLIT_SELF_SEEDED_KEY,'1');
+    })();
     function splitIdsForExpense(item){
       const valid=new Set(splitMembers.map(m=>String(m.id)));
       return (Array.isArray(item?.splitWith)?item.splitWith:[]).map(String).filter(id=>valid.has(id));
@@ -2420,14 +2460,7 @@ body{
 
     // ---------------- 準備頁籤 ----------------
     let activePlanCategory = '必備';
-    const defaultPlanData={
-      '必備':['有效護照(6個月)','展場入場證','現金與信用卡','網路設備 (SIM卡/WiFi機)','駕照正本及譯本(自駕用)'],
-      '衣物':['外衣外褲','內衣內褲','正式服裝','帽子','圍巾','手套','外套','睡衣褲','鞋襪','墨鏡'],
-      '隨身用品':['個人常備藥品','個人保養梳妝用品','衛生紙/濕紙巾','口罩','環保袋/小垃圾袋','雨具','保溫瓶','旅行枕','野餐墊','髮箍/髮夾','兒童餐具'],
-      '3C設備':['手機及充電器','耳機','相機','行動電源','筆電','充電線/延長線','運動攝影機','Airtag'],
-      '待辦事項':['Visit Japan Web(搭機前)','下載Disney Resort','旅平險','重要APP事先下載','重要文件電子備份'],
-      '其他':['萬聖節裝扮','旅行鍋','水果刀','夾鏈袋/保鮮盒','暖暖包','便攜式口袋折疊椅','小被被']
-    };
+    const defaultPlanData=basePlanTemplate();
     function normalizePlanData(raw){
       const out={};
       Object.keys(defaultPlanData).forEach(cat=>{
@@ -2722,9 +2755,11 @@ body{
 
     async function renderBookingPdfs(){
       const box=document.getElementById('booking-pdf-list');
+      const count=document.getElementById('booking-pdf-count');
       if(!box)return;
       try{
         const items=await getBookingPdfs();
+        if(count)count.textContent=items.length?`已上傳 ${items.length} 份`:'尚未上傳';
         if(!items.length){
           box.innerHTML='<div class="text-[9px] text-gray-400 text-center py-2">尚未上傳旅遊憑證</div>';
           return;
@@ -2743,6 +2778,7 @@ body{
           </div>`;
         }).join('');
       }catch(e){
+        if(count)count.textContent='讀取失敗';
         box.innerHTML='<div class="text-[9px] text-red-400 text-center py-2">旅遊憑證讀取失敗</div>';
       }
     }
@@ -3138,7 +3174,7 @@ body{
     function blobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
     function dataURLToBlob(dataURL){const [meta,data]=String(dataURL).split(',');const mime=(meta.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';const bin=atob(data||'');const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new Blob([bytes],{type:mime})}
     async function clearBookingCredentialStore(){try{const db=await openBookingPdfDB();await new Promise((resolve,reject)=>{const tx=db.transaction(BOOKING_PDF_STORE,'readwrite');tx.objectStore(BOOKING_PDF_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}}
-    const APP_EXACT_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2'];
+    const APP_EXACT_KEYS=['tokyo-days-v2','tokyo-expenses-v2','tokyo-expense-split-members-v1','tokyo-expense-split-self-seeded-v1','tokyo-rate-v2','tokyo-budget-v2','tokyo-shop-v2','tokyo-journals-v2','tokyo-plan-v2'];
     function isTokyoAppKey(k){return APP_EXACT_KEYS.includes(k)||k.startsWith('note-')||k.startsWith('tokyo-weather-');}
     function collectAppLocalStorage(){
       const out={};
