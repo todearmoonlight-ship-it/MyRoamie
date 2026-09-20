@@ -827,14 +827,6 @@ body{
         <button type="button" onclick="resetPhoneContent()" class="w-full py-2.5 rounded-xl bg-torii text-white font-bold text-xs btn-press"><i class="fa-solid fa-arrow-rotate-left mr-2"></i>重製手機內容</button>
       </div>
 
-      <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-2">
-        <h3 class="font-bold text-torii text-xs flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> 日本緊急求助資訊</h3>
-        <div class="text-[11px] text-gray-600 space-y-1">
-          <div>• 警察局求助：<a href="tel:110" class="font-bold text-skyBlue">110</a></div>
-          <div>• 火警/救護車：<a href="tel:119" class="font-bold text-skyBlue">119</a></div>
-          <div>• 駐日代表處：<a href="tel:+81-3-3280-7811" class="font-bold text-skyBlue">+81-3-3280-7811</a></div>
-        </div>
-      </div>
 
       <div class="bg-card rounded-2xl p-4 shadow-soft border border-sand space-y-3">
   <!-- 標題 -->
@@ -2654,7 +2646,7 @@ body{
       if(isScheduleDateBeyondForecastRange(iso)){
         box.classList.add('forecast-out-of-range');
         if(tempEl)tempEl.textContent='';
-        if(detailEl)detailEl.textContent='未曾進入預報16日內。';
+        if(detailEl)detailEl.textContent='為求準確，僅呈現近16日內天氣預報。';
         return;
       }
       if(cached&&!force){try{const c=JSON.parse(cached);if(tempEl)tempEl.textContent=c.temp;if(detailEl)detailEl.textContent=c.detail;if(Date.now()-(c.at||0)<10*60*1000)return}catch(e){}}
