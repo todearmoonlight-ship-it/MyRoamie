@@ -1,6 +1,6 @@
 {
-  "name": "TripBook 通用旅遊規劃 APP",
-  "short_name": "TripBook",
+  "name": "MyRoamie 旅遊規劃 APP",
+  "short_name": "MyRoamie",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
